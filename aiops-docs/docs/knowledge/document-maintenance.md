@@ -1,12 +1,12 @@
 # 维护文档
 
-维护文档的目标，是让项目知识随着代码和任务变化持续更新，避免文档在生成后快速失效。这里的维护不是让人定期想起来改文档，而是通过 hooks 记录变化、提醒 agent 判断影响面，并按治理等级决定是否自动推进。
+维护文档的目标，是让项目知识随着代码和任务变化持续更新，避免文档在生成后快速失效。维护通过 hooks 记录变化、提醒 agent 判断影响面，并按治理等级决定是否自动推进。
 
-文档维护服务的是整个 workspace 的知识库治理。一次接口改动可能同时影响 specs、architecture 和 workflows；一次部署方式调整可能同时影响 architecture、workflows 和 guides。维护流程必须按语义更新上下文，而不是只改被点名的单篇文档。
+文档维护服务的是整个 workspace 的知识库治理。一次接口改动可能同时影响 specs、architecture 和 workflows；一次部署方式调整可能同时影响 architecture、workflows 和 guides。维护流程按语义更新上下文，沿着关联链路更新所有受影响的文档。
 
 ## 维护入口
 
-日常维护的输入是 `.aiops/diff-records/pending.md`。它是语义变更记录，不是结构化数据库，也不是精确补丁列表。
+日常维护的输入是 `.aiops/diff-records/pending.md`。它记录的是语义变更——每条记录描述"什么变了"和"可能影响什么"。
 
 推荐结构：
 
@@ -53,7 +53,7 @@ docs(aiops): 更新 <project> 知识库
 
 ## Hooks 的职责边界
 
-hooks 是工具机制，不是知识判断本身。它们适合做三件事：
+hooks 是工具机制，负责记录和提醒。它们适合做三件事：
 
 1. 在任务开始时注入相关知识库上下文。
 2. 在任务结束或 git diff 出现时追加 pending 记录。
@@ -89,7 +89,7 @@ guides/
 
 一次合格的维护应满足：
 
-- pending 里的语义变更已被理解，而不是机械复制。
+- pending 里的语义变更已被充分理解。
 - 关键词召回覆盖了整个 workspace，而不只当前文件。
 - 相关 PRD、architecture、specs、adr、workflows 已保持一致。
 - 必要时更新 guides，保证人仍能读懂项目现状。
