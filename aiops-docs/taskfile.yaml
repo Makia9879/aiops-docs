@@ -1,0 +1,43 @@
+version: "3"
+
+vars:
+  NODE_IMAGE: node:24-alpine
+  NPM_CACHE: /tmp/npm-cache
+  UID:
+    sh: id -u
+  GID:
+    sh: id -g
+
+tasks:
+  npm:install:
+    desc: Install VuePress dependencies with Dockerized npm.
+    cmds:
+      - docker run --rm -u {{.UID}}:{{.GID}} -e npm_config_cache={{.NPM_CACHE}} -v {{.TASKFILE_DIR}}:/app -w /app {{.NODE_IMAGE}} npm install
+
+  build:
+    desc: Build VuePress static files with Dockerized npm.
+    deps:
+      - npm:install
+    cmds:
+      - docker run --rm -u {{.UID}}:{{.GID}} -e npm_config_cache={{.NPM_CACHE}} -v {{.TASKFILE_DIR}}:/app -w /app {{.NODE_IMAGE}} npm run build
+
+  up:
+    desc: Start the nginx container with docker compose.
+    cmds:
+      - docker compose -f {{.TASKFILE_DIR}}/docker-compose.yaml up -d
+
+  down:
+    desc: Stop the docker compose project.
+    cmds:
+      - docker compose -f {{.TASKFILE_DIR}}/docker-compose.yaml down
+
+  restart:
+    desc: Rebuild VuePress and restart the nginx container.
+    cmds:
+      - task: build
+      - docker compose -f {{.TASKFILE_DIR}}/docker-compose.yaml up -d --force-recreate
+
+  ps:
+    desc: Show docker compose service status.
+    cmds:
+      - docker compose -f {{.TASKFILE_DIR}}/docker-compose.yaml ps

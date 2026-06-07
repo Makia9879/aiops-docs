@@ -20,3 +20,7 @@ projects/<project>/
 ```
 
 文档优先服务 coding agent：每个结论都应尽量包含证据路径、影响范围和验证方式。
+
+## 工作流文章
+
+- [历史项目生成 AIOps 文档](./historical-project-aiops-docs.md)

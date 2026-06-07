@@ -18,7 +18,10 @@ export default defineUserConfig({
       "/knowledge/": [
         {
           text: "知识库",
-          children: ["/knowledge/"]
+          children: [
+            "/knowledge/",
+            "/knowledge/historical-project-aiops-docs.md"
+          ]
         }
       ]
     }
