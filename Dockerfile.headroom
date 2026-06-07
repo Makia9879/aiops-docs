@@ -1,0 +1,32 @@
+ARG PYTHON_IMAGE=registry.cn-hangzhou.aliyuncs.com/makia_docker/python:3.13-slim
+FROM ${PYTHON_IMAGE}
+
+ARG HEADROOM_EXTRAS=all
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN python -m pip install --no-cache-dir "headroom-ai[${HEADROOM_EXTRAS}]"
+
+RUN groupadd --gid 1000 nonroot \
+  && useradd --uid 1000 --gid nonroot --create-home nonroot \
+  && mkdir -p /home/nonroot/.headroom /data \
+  && chown -R nonroot:nonroot /home/nonroot /data
+
+USER nonroot
+WORKDIR /home/nonroot
+
+ENV HEADROOM_HOST=0.0.0.0 \
+    HEADROOM_WORKSPACE_DIR=/home/nonroot/.headroom \
+    HEADROOM_CONFIG_DIR=/home/nonroot/.headroom/config \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+EXPOSE 8787
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD ["curl", "--fail", "--silent", "http://127.0.0.1:8787/readyz"]
+
+ENTRYPOINT ["headroom", "proxy"]
+CMD ["--host", "0.0.0.0", "--port", "8787"]

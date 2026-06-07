@@ -1,0 +1,8 @@
+ARG BASE_IMAGE=node:24-bookworm
+FROM ${BASE_IMAGE}
+
+RUN npm install -g @colbymchenry/codegraph \
+  && npm cache clean --force
+
+ENTRYPOINT ["codegraph"]
+CMD ["--help"]

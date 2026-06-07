@@ -1,0 +1,16 @@
+ARG BASE_IMAGE=node:24-bookworm
+FROM ${BASE_IMAGE}
+
+ARG UA_PLATFORM=codex
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates curl git \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL https://raw.githubusercontent.com/Lum1104/Understand-Anything/main/install.sh \
+  | bash -s "${UA_PLATFORM}"
+
+ENV UNDERSTAND_ANYTHING_REPO=/root/.understand-anything/repo \
+    UNDERSTAND_ANYTHING_PLUGIN=/root/.understand-anything/repo/understand-anything-plugin
+
+CMD ["bash", "-lc", "find /root/.agents/skills -maxdepth 1 -type l -print | sort && echo 'Understand-Anything is installed in this image.'"]
