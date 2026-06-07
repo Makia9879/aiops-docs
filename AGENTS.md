@@ -20,7 +20,7 @@ Root image scripts include `./scripts/build-codegraph-image.sh`, `./scripts/buil
 
 ## Coding Style & Naming Conventions
 
-Use Markdown as the primary authoring format. Keep documents dense, source-backed, and structured with `##`/`###` headings. Follow the managed-document pattern in `skills/aiops-knowledge-lifecycle/references/document-schema.md`: summary, evidence, agent notes, and open questions only when useful. Use kebab-case filenames for Markdown pages and ADRs, for example `historical-project-aiops-docs.md` or `0002-version-skill-source-in-repo.md`. TypeScript config files use two-space indentation and double quotes, matching `config.ts`.
+Use Markdown as the primary authoring format. Keep documents dense, source-backed, and structured with `##`/`###` headings. Follow the managed-document pattern in `skills/aiops-knowledge-lifecycle/references/document-schema.md`: summary, evidence, agent notes, and open questions only when useful. Use kebab-case filenames for Markdown pages and ADRs, for example `historical-project-documentation.md` or `0002-version-skill-source-in-repo.md`. TypeScript config files use two-space indentation and double quotes, matching `config.ts`.
 
 ## Testing Guidelines
 

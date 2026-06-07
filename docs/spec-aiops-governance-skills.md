@@ -52,10 +52,11 @@ Date: 2026-06-07
 
 - 新增 `aiops-governance-bootstrap` skill。
 - 改写共享 schema/reference，使目标结构从旧 `00-project-card.md` 风格迁移到 `.aiops/projects/<project>/` 风格。
-- 定义 TypeScript bootstrap question model 和 TUI 执行路径。
+- 定义 TypeScript bootstrap question model 和 TUI 执行路径的接口边界。
 - 定义 CLI 命令边界：`install`、`init`、`setup`。
 - 定义 `.aiops/` 目录、project 目录、guides VuePress 站点、hooks、diff records。
 - 更新 existing skills 的职责边界和执行顺序。
+- 更新 VuePress 知识库文章，按“历史项目生成文档、维护文档、新项目初始化文档”三个场景组织。
 
 本轮不做：
 
@@ -64,6 +65,7 @@ Date: 2026-06-07
 - 不使用 JSONL 记录 diff records。
 - 不做 workspace 级 guides 聚合站点。
 - 不做 installer 对 `.aiops/hooks/**` 的版本升级管理。
+- 不在当前 docs workspace 中强行引入完整 npm CLI 工程；CLI/TUI 和 hook 脚本先以 skill/spec 边界、模板路径和后续实现顺序固化。
 
 ## 4. Target Workspace Structure
 
@@ -479,12 +481,10 @@ guides/docs/change-playbook.md
 2. 更新 `document-schema.md` 为 `.aiops/projects/<project>/` 结构。
 3. 新增 `aiops-governance-bootstrap` skill。
 4. 更新现有 scenario skills 的路径和职责。
-5. 新增 TS bootstrap question model。
-6. 新增 CLI/TUI skeleton。
-7. 新增 `.aiops/hooks` 模板。
-8. 新增 guides VuePress 模板。
-9. 实现 `install/init/setup` 幂等逻辑。
-10. 用当前 workspace 做一次 dry-run 或 fixture 验证。
+5. 更新 VuePress 知识库文章为三个场景入口。
+6. 在 spec 和 skill 中固化 TS bootstrap question model、CLI/TUI、`.aiops/hooks`、guides VuePress 模板的接口边界。
+7. 后续在独立 CLI 包或 installer 入口中实现 `install/init/setup` 幂等逻辑。
+8. 用当前 workspace 做一次 docs build 或 fixture 验证。
 
 ## 16. Acceptance Criteria
 
