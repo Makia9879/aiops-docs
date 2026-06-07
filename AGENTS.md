@@ -8,10 +8,12 @@ This repository is an AIOps documentation workspace. The VuePress site lives in 
 
 Run commands from `aiops-docs/` unless noted.
 
-- `npm install`: install VuePress dependencies locally.
-- `npm run dev`: start VuePress dev server on `0.0.0.0`.
-- `npm run build`: generate the static site in `docs/.vuepress/dist`.
-- `npm run serve`: start the Docker Compose service.
+- Do not execute `npm`, `npx`, `node`, or `python` directly on the host machine.
+- When a Node or Python command is needed, first try a temporary Docker image such as `node:24-bookworm` or `python:3.13-slim`, mounting only the needed workspace path.
+- `npm install`: command intent is to install VuePress dependencies, but run it through a temporary Docker node container.
+- `npm run dev`: command intent is to start VuePress dev server on `0.0.0.0`, but run it through Docker or Docker Compose.
+- `npm run build`: command intent is to generate the static site in `docs/.vuepress/dist`, but run it through a temporary Docker node container.
+- `npm run serve`: command intent is to start the Docker Compose service; prefer `docker compose up`.
 - `task build`: install dependencies and build via Dockerized npm.
 - `task restart`: rebuild and recreate the nginx container.
 - `task ps`: show compose service status.
@@ -24,7 +26,7 @@ Use Markdown as the primary authoring format. Keep documents dense, source-backe
 
 ## Testing Guidelines
 
-There is no dedicated unit test suite in this repo. Treat `npm run build` or `task build` as the primary validation for docs and VuePress configuration changes. For content-only changes, also check links, sidebar entries, and evidence paths manually. When adding a new page under `aiops-docs/docs/knowledge/`, confirm it is reachable from `config.ts` if it should appear in navigation.
+There is no dedicated unit test suite in this repo. Treat Dockerized `npm run build` or `task build` as the primary validation for docs and VuePress configuration changes. Do not run host `npm`, `npx`, `node`, or `python` during validation. For content-only changes, also check links, sidebar entries, and evidence paths manually. When adding a new page under `aiops-docs/docs/knowledge/`, confirm it is reachable from `config.ts` if it should appear in navigation.
 
 ## Commit & Pull Request Guidelines
 
@@ -33,3 +35,5 @@ The current history only shows an initial `init` commit, so use concise imperati
 ## Agent-Specific Instructions
 
 Do not overwrite generated or user-modified files without checking `git status`. Keep repo-local skills in `skills/` aligned with ADR decisions, especially when changing document schema, routing behavior, or evidence rules.
+
+Agents must not run `npm`, `npx`, `node`, or `python` on the host. Use temporary Docker containers for those runtimes and keep generated artifacts scoped to the mounted workspace paths required by the task.
