@@ -15,7 +15,7 @@ Prefer sources in this order:
 - Every non-obvious claim needs a source path.
 - Cite local paths, functions, commands, config keys, or graph node names.
 - Do not present inferred behavior as fact. Mark it as "Inference" and explain the basis.
-- Put missing evidence in `90-open-questions.md`.
+- Put missing evidence in `.aiops/projects/<project>/open-questions.md`.
 
 ## Uncertainty Labels
 
@@ -28,7 +28,8 @@ Use these labels consistently:
 
 ## Anti-Patterns
 
-- Do not summarize the repository file tree as knowledge.
+- Do not summarize the workspace file tree as knowledge.
 - Do not copy README prose unless it becomes an agent-useful fact.
 - Do not invent business terminology when code uses a different term.
 - Do not update broad documents when only one section is affected.
+- Do not treat Trellis session memory as confirmed fact unless it is backed by code, docs, config, tasks, or human confirmation.
