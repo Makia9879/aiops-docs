@@ -6,29 +6,24 @@ Date: 2026-06-07
 
 将当前 AIOps skills 从“提示词式文档生成流程”升级为一套 workspace 级项目知识库治理系统。
 
-### 1.1 原始场景
+### 1.1 原始目标与实现章节
 
-本 spec 覆盖三个原始使用场景：
+本 spec 覆盖的原始目标和对应实现章节如下：
 
-1. 历史项目生成文档：从已有代码、已有文档、配置、图谱工具结果生成项目级 AIOps 知识库。
-2. 维护文档：hooks 记录变更语义到 `pending.md`，LLM 根据 pending 语义做 workspace-wide 召回和跨文档一致性维护。
-3. 新项目初始化文档：从需求、会议记录、PRD 或粗略想法初始化项目知识库。
+| 原始目标 | 目标说明 | 对应实现章节 |
+| --- | --- | --- |
+| 历史项目生成文档 | 从已有代码、已有文档、配置、图谱工具结果生成项目级 AIOps 知识库。 | `4. Target Workspace Structure`、`8. Project Config`、`13. Guides Site`、`14. Skill Changes` |
+| 维护文档 | hooks 记录变更语义到 `pending.md`，LLM 根据 pending 语义做 workspace-wide 召回和跨文档一致性维护。 | `9. Governance Levels`、`10. Hooks`、`11. Diff Records`、`12. Semantic Maintenance` |
+| 新项目初始化文档 | 从需求、会议记录、PRD 或粗略想法初始化项目知识库。 | `5. Install Commands`、`6. Bootstrap Questions`、`8. Project Config`、`13. Guides Site`、`14. Skill Changes` |
+| 利用文档继续维护项目 | coding agent 在后续开发中能召回 project 级 PRD、architecture、specs、ADR、workflows 和 guides，基于文档理解项目并维护代码。 | `4. Target Workspace Structure`、`8. Project Config`、`10. Hooks`、`12. Semantic Maintenance`、`14. Skill Changes` |
+| 人类阅读项目知识 | canonical docs 面向 agent 治理，guides 站点面向人类阅读，每个 project 自带可用 Docker Compose 打开的 VuePress 站点。 | `8. Project Config`、`13. Guides Site` |
+| 降低安装和使用心智负担 | `install`、`init`、`setup` 幂等；初始化通过 TypeScript/TUI 引导问题和默认答案完成；治理强度用 `low`、`medium`、`high`、`xhigh` 预设。 | `5. Install Commands`、`6. Bootstrap Questions`、`9. Governance Levels` |
+| 支持 Codex 与 Claude Code | hooks 覆盖 Codex 和 Claude Code，平台配置只做追加式幂等写入，hooks 文件作为普通治理文件提交。 | `10. Hooks` |
+| 支持 Trellis 协同 | Trellis 作为任务和上下文注入层，不作为 canonical source；canonical source 仍是 `.aiops/projects/<project>/`。 | `8. Project Config`、`14. Skill Changes` |
 
-这些场景的共同目标是知识库治理：让 coding agent 能依赖文档继续维护项目，同时让人可以通过 guides 站点阅读项目知识。
+这些目标的共同边界是知识库治理：让 coding agent 能依赖文档继续维护项目，同时让人可以通过 guides 站点阅读项目知识。
 
-### 1.2 实现章节位置
-
-实现相关内容从以下章节开始：
-
-- `5. Install Commands`：定义 `install`、`init`、`setup` 的幂等动作。
-- `6. Bootstrap Questions`：定义 TypeScript/TUI 引导问题模型。
-- `10. Hooks`：定义 Codex/Claude Code hook 边界。
-- `11. Diff Records`：定义 `pending.md` 和归档规则。
-- `12. Semantic Maintenance`：定义语义维护流程。
-- `14. Skill Changes`：定义需要新增和改造的 skills。
-- `15. Implementation Order`：定义实际落地顺序。
-
-### 1.3 第一版目标
+### 1.2 第一版目标
 
 第一版目标：
 
