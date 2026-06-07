@@ -2,6 +2,12 @@
 
 ## Glossary
 
+### Workspace
+
+The working directory scope where AIOps governance assets are installed and executed. A workspace may contain one or more governed projects and may or may not map one-to-one to a Git repository.
+
+中文术语：工作区。
+
 ### AIOps Knowledge Lifecycle
 
 The end-to-end workflow for creating, maintaining, and reviewing structured project knowledge for AIOps work. It covers historical project intake from existing code, daily documentation maintenance by coding agents, and new project briefing from requirements input.
@@ -20,6 +26,66 @@ The structured knowledge base should optimize for coding-agent maintenance, not 
 
 中文术语：面向 coding agent 的可执行知识结构。
 
+### Project-Level Knowledge Governance
+
+The primary governance object is a whole project, not an individual article or module. A governed project may contain multiple product domains, such as CA, RA, KMC, and OCSP inside a digital certificate authentication system.
+
+中文术语：项目级知识库治理。
+
+### Product Domain
+
+A product domain is a sub-product or bounded area inside a governed project. Product domains share project-level governance, evidence, ADRs, and cross-product workflows, but may have their own PRD, architecture, specs, workflows, and governance-level override.
+
+中文术语：子产品知识域。
+
+### Canonical Knowledge Layer
+
+The long-lived source of truth for project knowledge. It uses stable project-level directories such as `prd/`, `architecture/`, `specs/`, `adr/`, `workflows/`, and `guides/`.
+
+中文术语：权威知识层。
+
+### Reading Layer
+
+Human-facing guides derived from, and linked back to, canonical knowledge. Reading-layer documents optimize onboarding, overview, navigation, and change playbooks without replacing canonical documents as the source of truth.
+
+中文术语：人类阅读层。
+
+### Diff Record
+
+A Markdown record of a code, config, task, or documentation change that may require knowledge maintenance. Hooks append concise semantic records; maintenance skills consume and archive them.
+
+中文术语：变更记录。
+
+### Maintenance Debt
+
+The accumulated set of pending diff records that have not yet been reviewed, ignored, archived, or applied to the canonical knowledge layer.
+
+中文术语：文档维护债务。
+
+### Semantic Maintenance
+
+The maintenance workflow that reads pending Markdown diff records as semantic change signals, extracts product/topic/change-type keywords, recalls related canonical documents, and updates cross-document context consistently. It is broader than updating only files explicitly listed by a hook.
+
+中文术语：语义维护。
+
+### Governance Level
+
+A preset that controls the amount of knowledge-maintenance pressure applied by hooks and skills. The supported levels are `low`, `medium`, `high`, and `xhigh`; `high` is the recommended default.
+
+中文术语：治理强度档位。
+
+### Knowledge Language
+
+The default authoring language for generated and maintained AIOps knowledge documents, diff records, and reading guides. The default is Chinese unless project initialization specifies another language. The language can be changed after installation through governance configuration.
+
+中文术语：知识库语言。
+
+### Operational Mirror
+
+A task-execution copy or slice of canonical knowledge used by tools such as Trellis for context injection. Operational mirrors are not the long-lived source of truth.
+
+中文术语：执行态镜像。
+
 ### Routed Skill Set
 
 The AIOps Knowledge Lifecycle is implemented as multiple independently triggerable skills plus a routing skill. The routing skill chooses the scenario, while scenario skills handle historical project intake, daily documentation maintenance, new project briefing, and knowledge review.
@@ -28,6 +94,6 @@ The AIOps Knowledge Lifecycle is implemented as multiple independently triggerab
 
 ### Skill Source and Runtime Copy
 
-AIOps knowledge skills are authored in the repository under `skills/` and installed or copied to the agent runtime skill directory such as `~/.agents/skills/`. The repository copy is the version-controlled source of truth; the runtime copy is what agents load during work.
+AIOps knowledge skills are authored in the workspace source tree under `skills/` and installed or copied to the agent runtime skill directory such as `~/.agents/skills/`. The workspace copy is the version-controlled source of truth when the workspace is under version control; the runtime copy is what agents load during work.
 
 中文术语：技能源稿与运行副本。
