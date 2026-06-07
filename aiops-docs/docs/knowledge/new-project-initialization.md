@@ -74,6 +74,16 @@
 
 `install` 不应偷偷改项目文件。`init` 和 `setup` 可以改 workspace，但必须是幂等动作。
 
+当前可执行入口在 `packages/aiops-governance-cli`。遵守本 workspace 的运行约束，不在宿主机直接执行 `npm`、`npx`、`node`，而是用临时 Docker node 镜像运行：
+
+```bash
+docker run --rm -it \
+  -v "$PWD":/repo \
+  -w /repo/packages/aiops-governance-cli \
+  node:24-bookworm \
+  bash -lc "npm ci && npm run build && node dist/cli.js setup --yes --project cert-auth --products CA,RA,KMC,OCSP"
+```
+
 ## Trellis 的位置
 
 Trellis 可以纳入工具使用范围，但不是 canonical source。

@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.aiops/local/**
+.aiops/cache/**
+.aiops/tmp/**
