@@ -1,17 +1,25 @@
 {
-  "name": "@aiops/governance-cli",
+  "name": "@makia9879/aiops",
   "version": "0.1.0",
   "description": "Executable AIOps governance workspace bootstrap CLI.",
   "type": "module",
   "bin": {
     "aiops-governance": "./dist/cli.js"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "check": "tsc -p tsconfig.json --noEmit"
+    "check": "tsc -p tsconfig.json --noEmit",
+    "prepare-package": "node scripts/prepare-package.mjs",
+    "prepack": "npm run build && npm run prepare-package",
+    "prepublishOnly": "npm run check"
   },
   "files": [
-    "dist"
+    "dist",
+    "assets/skills",
+    "README.md"
   ],
   "devDependencies": {
     "@types/node": "^24.0.0",

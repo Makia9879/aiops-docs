@@ -503,6 +503,9 @@ guides/docs/change-playbook.md
 - 默认 governance level 为 `high`。
 - CLI TypeScript check/build 通过。
 - CLI fixture 验证 `install`、首次 `init`、嵌套目录重复 `init` 均符合预期。
+- npm package name is `@makia9879/aiops`, current version is `0.1.0`, and release tag is `v0.1.0`.
+- npm publish is driven by Docker script `scripts/publish-aiops-npm.sh` with `NPM_TOKEN` supplied from environment or CI secret.
+- Fixed external tool versions are maintained in `packages/aiops-governance-cli/src/toolchain/versions.json`.
 
 ## 17. Open Questions
 

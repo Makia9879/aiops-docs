@@ -74,14 +74,22 @@
 
 `install` 不应偷偷改项目文件。`init` 和 `setup` 可以改 workspace，但必须是幂等动作。
 
-当前可执行入口在 `packages/aiops-governance-cli`。遵守本 workspace 的运行约束，不在宿主机直接执行 `npm`、`npx`、`node`，而是用临时 Docker node 镜像运行：
+发布后推荐通过 `npx` 原生安装和初始化：
+
+```bash
+npx -y @makia9879/aiops setup --yes --project cert-auth --products CA,RA,KMC,OCSP
+```
+
+`install` 默认会安装 AIOps skills，并按固定版本安装 `codegraph`、`understand-anything`、`trellis` 工具链。固定版本号集中维护在 CLI 包的 `src/toolchain/versions.json`。
+
+在本 workspace 内开发和验证 CLI 时，遵守运行约束，不在宿主机直接执行 `npm`、`npx`、`node`，而是用临时 Docker node 镜像运行：
 
 ```bash
 docker run --rm -it \
   -v "$PWD":/repo \
   -w /repo/packages/aiops-governance-cli \
   node:24-bookworm \
-  bash -lc "npm ci && npm run build && node dist/cli.js setup --yes --project cert-auth --products CA,RA,KMC,OCSP"
+  bash -lc "npm ci && npm run build && node dist/cli.js setup --yes --with none --project cert-auth --products CA,RA,KMC,OCSP"
 ```
 
 ## Trellis 的位置

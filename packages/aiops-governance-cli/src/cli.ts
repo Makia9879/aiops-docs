@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs } from "./args.js";
 import { installSkills } from "./install.js";
+import { installToolchain } from "./toolchain/toolchain.js";
 import {
   inferProjectId,
   initializeWorkspace
@@ -36,17 +37,29 @@ async function main(): Promise<void> {
 }
 
 async function runInstall(args: ReturnType<typeof parseArgs>): Promise<void> {
-  const result = await installSkills({
+  const skillsResult = await installSkills({
     cwd: args.cwd,
     skillsSource: args.skillsSource,
     skillsTarget: args.skillsTarget
   });
+  const toolchainResult = await installToolchain({
+    selection: args.withTools,
+    toolsRoot: args.toolsRoot
+  });
 
-  console.log(`Skills source: ${result.sourceRoot}`);
-  console.log(`Skills targets: ${result.targets.join(", ")}`);
-  console.log(`Installed: ${result.installed.length}`);
-  console.log(`Updated: ${result.updated.length}`);
-  console.log(`Skipped existing: ${result.skipped.length}`);
+  console.log(`Skills source: ${skillsResult.sourceRoot}`);
+  console.log(`Skills targets: ${skillsResult.targets.join(", ")}`);
+  console.log(`Skills installed: ${skillsResult.installed.length}`);
+  console.log(`Skills updated: ${skillsResult.updated.length}`);
+  console.log(`Skills skipped existing: ${skillsResult.skipped.length}`);
+  console.log(`Tools root: ${toolchainResult.toolsRoot}`);
+  console.log(`Tools bin: ${toolchainResult.binRoot}`);
+  console.log(`Tools installed: ${toolchainResult.installed.length}`);
+  console.log(`Tools updated: ${toolchainResult.updated.length}`);
+  console.log(`Tools skipped: ${toolchainResult.skipped.length}`);
+  if (toolchainResult.shims.length > 0) {
+    console.log(`Tool shims: ${toolchainResult.shims.join(", ")}`);
+  }
 }
 
 async function runInit(args: ReturnType<typeof parseArgs>): Promise<void> {
@@ -88,6 +101,8 @@ Options:
   --language <lang>    Knowledge language; default zh-CN
   --skills-source <p>  AIOps skill source directory; default discovers ./skills
   --skills-target <p>  Runtime skills directory; default ~/.agents/skills and ~/.codex/skills
+  --with <tools>       Toolchain selection: default, none, or comma list
+  --tools-root <p>     Tool install root; default ~/.aiops/tools
   -h, --help           Show this help
 `);
 }

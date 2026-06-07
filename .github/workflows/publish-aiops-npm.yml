@@ -1,0 +1,32 @@
+name: Publish AIOps npm package
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run npm pack checks without publishing"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+  push:
+    tags:
+      - "v0.1.0"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_VERSION: "0.1.0"
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Docker
+        run: docker version
+
+      - name: Publish through Docker
+        run: bash scripts/publish-aiops-npm.sh

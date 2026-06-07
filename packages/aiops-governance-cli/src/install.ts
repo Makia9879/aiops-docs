@@ -3,6 +3,7 @@ import { access, cp, mkdir, readdir, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
 
 export interface InstallOptions {
   cwd: string;
@@ -75,6 +76,16 @@ async function resolveSkillsSource(options: InstallOptions): Promise<string> {
   const explicit = options.skillsSource ?? process.env.AIOPS_SKILLS_SOURCE;
   if (explicit) {
     return assertSkillsSource(path.resolve(options.cwd, explicit));
+  }
+
+  const packagedSource = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "assets",
+    "skills"
+  );
+  if (await isSkillsSource(packagedSource)) {
+    return packagedSource;
   }
 
   let current = path.resolve(options.cwd);

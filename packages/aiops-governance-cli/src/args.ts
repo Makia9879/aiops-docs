@@ -7,6 +7,8 @@ export interface ParsedArgs {
   language?: string;
   skillsSource?: string;
   skillsTarget?: string;
+  withTools?: string;
+  toolsRoot?: string;
   cwd: string;
 }
 
@@ -92,6 +94,26 @@ export function parseArgs(argv: string[]): ParsedArgs {
 
     if (arg.startsWith("--skills-target=")) {
       parsed.skillsTarget = arg.slice("--skills-target=".length);
+      continue;
+    }
+
+    if (arg === "--with") {
+      parsed.withTools = readOptionValue(arg, args);
+      continue;
+    }
+
+    if (arg.startsWith("--with=")) {
+      parsed.withTools = arg.slice("--with=".length);
+      continue;
+    }
+
+    if (arg === "--tools-root") {
+      parsed.toolsRoot = readOptionValue(arg, args);
+      continue;
+    }
+
+    if (arg.startsWith("--tools-root=")) {
+      parsed.toolsRoot = arg.slice("--tools-root=".length);
       continue;
     }
 

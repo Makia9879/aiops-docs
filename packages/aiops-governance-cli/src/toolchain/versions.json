@@ -1,0 +1,17 @@
+{
+  "codegraph": {
+    "package": "@colbymchenry/codegraph",
+    "version": "0.9.9",
+    "bin": "codegraph"
+  },
+  "understand-anything": {
+    "package": "@understand-anything/skill",
+    "version": "2.7.6",
+    "bin": null
+  },
+  "trellis": {
+    "package": "@mindfoldhq/trellis",
+    "version": "0.5.19",
+    "bin": "trellis"
+  }
+}
