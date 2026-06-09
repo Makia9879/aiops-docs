@@ -80,6 +80,30 @@ The default authoring language for generated and maintained AIOps knowledge docu
 
 中文术语：知识库语言。
 
+### Project Iteration
+
+A planned project delivery line that binds product versions and service branches for one round of documentation and implementation work.
+
+中文术语：项目迭代。
+
+### Product Version
+
+A product delivery version that belongs to a project iteration and defines the service branches that represent that product in the iteration.
+
+中文术语：产品版本。
+
+### Service Main Branch
+
+The source-code branch selected by a project iteration as the authoritative service branch for documentation maintenance.
+
+中文术语：微服务主分支。
+
+### Iteration Binding
+
+A project-level configuration that maps one project iteration to its product versions and service main branches.
+
+中文术语：迭代绑定。
+
 ### Operational Mirror
 
 A task-execution copy or slice of canonical knowledge used by tools such as Trellis for context injection. Operational mirrors are not the long-lived source of truth.
