@@ -24,15 +24,14 @@
 
    | 优先级 | 文档 | 说明 |
    |-------|------|------|
-   | 1 | `project.yaml` | 项目标识、产品域、治理等级、语言 |
-   | 2 | `README.md` | 导航索引，不做长篇叙事 |
-   | 3 | `prd/` | 目标、需求、用户故事、约束、产品域边界 |
-   | 4 | `architecture/` | 建议的系统结构、组件、依赖方向、数据流 |
-   | 5 | `specs/` | 接口、数据合约、协议、交付规格 |
-   | 6 | `adr/` | 已接受或提议的架构决策 |
-   | 7 | `workflows/` | 用户流程、系统流程、运维流程 |
-   | 8 | `guides/docs/` | 给人看的概述、接入指南、变更流程 |
-   | 9 | `open-questions.md` | 未解决的决定 |
+   | 1 | `project.yaml` | 项目标识、产品注册表、治理等级、语言 |
+   | 2 | `iteration-bindings.yaml` | 项目迭代、产品版本、微服务主分支 |
+   | 3 | `README.md` | 导航索引，不做长篇叙事 |
+   | 4 | `iterations/` | 项目迭代目标、范围、风险 |
+   | 5 | `products/<product>/` | 产品版本、产品能力、产品内架构 |
+   | 6 | `products/<product>/services/<service>/` | 服务接口、模型、流程、验证入口 |
+   | 7 | `guides/docs/` | 给人看的概述、接入指南、变更流程 |
+   | 8 | `open-questions.md` | 未解决的决定 |
 
 ## 内容标注
 
@@ -54,7 +53,7 @@
 
 ### 骨架比内容重要
 
-初始化时最重要的是把结构建对——五类文档的目录建好，项目 YAML 配好，Hook 装好。结构对了，填内容是日常开发中水到渠成的事。结构不对，后面填的内容很难被 agent 有效召回。
+初始化时最重要的是把结构建对——项目、产品、微服务三级目录建好，`project.yaml` 和 `iteration-bindings.yaml` 配好，Hook 装好。结构对了，填内容是日常开发中水到渠成的事。结构不对，后面填的内容很难被 agent 有效召回。
 
 ### 面向 agent 写作
 
@@ -70,8 +69,9 @@ Canonical 文档不需要"好看"。它需要：
 
 一次合格的新项目初始化：
 - workspace 和 project 边界清楚
-- 子产品域已被记录（哪怕一开始只有 `core`）
-- PRD、architecture、specs、adr、workflows 五类目录已建立
+- 产品和微服务已被记录（哪怕一开始只有 `core`）
+- `iteration-bindings.yaml` 已表达项目迭代、产品版本和微服务主分支
+- 项目、产品、微服务三级文档落点已建立
 - 所有内容已标注可信度（Confirmed / Assumption / Unknown）
 - guides 可服务人类阅读
 - Claude Code 和 Codex Hook 已配置

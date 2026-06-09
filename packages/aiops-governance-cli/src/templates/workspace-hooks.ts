@@ -51,7 +51,9 @@ def main() -> int:
 
     print("AIOps knowledge governance context")
     print("Canonical docs: .aiops/projects/<project>/")
+    print("Schema: project iteration -> product version -> service required branch.")
     print("Maintenance input: .aiops/diff-records/pending.md")
+    print("Before canonical edits: read project.yaml and iteration-bindings.yaml; check service code_root branch against required_branch.")
     print("Reminder: hooks only inject context, record semantic diff, and trigger maintenance reminders.")
     print("")
     print(summary)
@@ -149,6 +151,9 @@ def append_record(path: Path, payload: dict) -> None:
         "Status: pending",
         f"Source: hook:{source}",
         f"Tool: {tool_name}",
+        "Project iteration: unknown",
+        "Product: unknown",
+        "Service: unknown",
         "",
         "Changed files:",
     ]
@@ -161,7 +166,7 @@ def append_record(path: Path, payload: dict) -> None:
     lines.extend([
         "",
         "Semantic direction:",
-        "- LLM should summarize this change, extract keywords, recall related workspace context, and update affected knowledge docs if needed.",
+        "- LLM should identify project/product/service scope, read iteration-bindings.yaml, check service branch bindings, then recall related workspace context and update affected knowledge docs if needed.",
     ])
 
     if raw_hint:
@@ -242,7 +247,7 @@ def main() -> int:
         return 0
 
     print(f"AIOps: {count} pending knowledge governance record(s), level={level}, threshold={threshold}.")
-    print("Maintenance flow: read pending.md -> summarize semantics -> extract keywords -> workspace-wide recall -> update related docs -> archive handled records.")
+    print("Maintenance flow: read pending.md -> identify project iteration/product/service -> read iteration-bindings.yaml -> check service required_branch -> summarize semantics -> workspace-wide recall -> update related docs -> archive handled records.")
 
     if count >= threshold:
         print("AIOps: threshold reached. Trigger aiops-daily-doc-maintenance before continuing when possible.")

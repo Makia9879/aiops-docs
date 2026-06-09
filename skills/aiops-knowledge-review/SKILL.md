@@ -13,30 +13,48 @@ description: Reviews AIOps structured knowledge bases for schema coverage, evide
 4. Check schema coverage and note missing files or unjustified extra directories.
 5. Check project-level governance:
    - `project.yaml` exists and does not contain machine-local absolute paths.
-   - product domains are represented when the project has sub-products.
+   - `project.yaml` uses `schema_version: 2` or otherwise represents project/product/service structure clearly.
+   - products are represented when the project has sub-products.
+   - each product lists its services.
+   - `iteration-bindings.yaml` exists.
    - `README.md` is an index/navigation page, not a long article.
    - `guides/` exists for human reading.
-6. Check canonical coverage:
-   - `prd/`
-   - `architecture/`
-   - `specs/`
-   - `adr/`
-   - `workflows/`
-   - `open-questions.md`
-7. Check evidence:
+6. Check iteration binding completeness:
+   - every active project iteration has `id`, `docs_branch`, and `docs_path`;
+   - every bound product has `id`, `version`, and `docs_path`;
+   - every bound service has `id`, `code_root`, and `required_branch`;
+   - bound products exist under `products/<product>/`;
+   - bound services exist under `products/<product>/services/<service>/`;
+   - no local temporary source branch is recorded as a document version.
+7. Check branch-bound maintenance risk:
+   - for each service with a reachable `code_root`, compare `git -C <code_root> branch --show-current` with `required_branch`;
+   - report mismatches as review findings;
+   - verify prior mismatch confirmations, pending records, or open questions exist when docs were changed despite a mismatch.
+8. Check canonical coverage:
+   - project iteration docs under `iterations/<project-iteration>/`;
+   - product docs under `products/<product>/{prd,architecture,specs,adr,workflows}/`;
+   - service docs under `products/<product>/services/<service>/{architecture,specs,workflows,adr}/`;
+   - `product.yaml` for each product;
+   - `service.yaml` for each service;
+   - `open-questions.md`.
+9. Check external upstream/downstream documentation:
+   - relationship facts live in the current product or service canonical docs;
+   - call entry point, protocol, responsibility boundary, error semantics, and validation path are explicit when evidence exists;
+   - no `cross/`, `integration.yaml`, or independent cross-product/service matrix is introduced.
+10. Check evidence:
    - claims cite source paths or are labelled as assumptions;
    - stale paths are detected;
    - code/docs contradictions are called out.
-8. Check agent usability:
+11. Check agent usability:
    - entry points and impact areas are explicit;
    - maintenance rules are actionable;
    - validation commands are present where applicable.
-9. Check human readability:
+12. Check human readability:
    - `guides/docs/overview.md` explains the project;
    - `guides/docs/onboarding.md` helps a developer start;
    - `guides/docs/change-playbook.md` explains how to maintain knowledge.
-10. Check terminology against `CONTEXT.md` if present.
-11. Produce findings first, ordered by severity.
+13. Check terminology against `CONTEXT.md` if present.
+14. Produce findings first, ordered by severity.
 
 ## Finding Format
 

@@ -28,19 +28,25 @@ The structured knowledge base should optimize for coding-agent maintenance, not 
 
 ### Project-Level Knowledge Governance
 
-The primary governance object is a whole project, not an individual article or module. A governed project may contain multiple product domains, such as CA, RA, KMC, and OCSP inside a digital certificate authentication system.
+The project-level Git origin repository is the commit boundary for governed knowledge. Inside that boundary, the knowledge model is organized as project, product, and service governance objects. A governed project may contain multiple products, and each product may contain multiple source-code services.
 
 中文术语：项目级知识库治理。
 
-### Product Domain
+### Product
 
-A product domain is a sub-product or bounded area inside a governed project. Product domains share project-level governance, evidence, ADRs, and cross-product workflows, but may have their own PRD, architecture, specs, workflows, and governance-level override.
+A product is a governed sub-product inside a project. It has stable identity, product-level PRD, architecture, specs, workflows, ADRs, and a service registry. Product versions are selected by project iterations rather than by local developer branches.
 
-中文术语：子产品知识域。
+中文术语：产品。
+
+### Service
+
+A service is a source-code service under a product. Service canonical docs describe implementation entry points, API or RPC contracts, data models, runtime configuration, business rules, validation commands, and external upstream or downstream calls owned by that service.
+
+中文术语：微服务。
 
 ### Canonical Knowledge Layer
 
-The long-lived source of truth for project knowledge. It uses stable project-level directories such as `prd/`, `architecture/`, `specs/`, `adr/`, `workflows/`, and `guides/`.
+The long-lived source of truth for governed project knowledge. It is split into project iteration docs under `iterations/`, product docs under `products/<product>/`, and service docs under `products/<product>/services/<service>/`. Human guides remain a reading layer and are not the fact source.
 
 中文术语：权威知识层。
 
@@ -88,7 +94,7 @@ A planned project delivery line that binds product versions and service branches
 
 ### Product Version
 
-A product delivery version that belongs to a project iteration and defines the service branches that represent that product in the iteration.
+A product delivery version selected by a project iteration. Products have versions; services do not have independent documentation versions in this model.
 
 中文术语：产品版本。
 
@@ -100,7 +106,7 @@ The source-code branch selected by a project iteration as the authoritative serv
 
 ### Iteration Binding
 
-A project-level configuration that maps one project iteration to its product versions and service main branches.
+A project-level `iteration-bindings.yaml` configuration that maps one project iteration to its documentation branch, product versions, and service main branches. Coding agents must read it before modifying canonical docs.
 
 中文术语：迭代绑定。
 

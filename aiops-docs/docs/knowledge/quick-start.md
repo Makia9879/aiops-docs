@@ -46,14 +46,12 @@ your-project/
 │   ├── governance.yaml          # 治理配置
 │   ├── hooks/                   # Agent Hook 脚本
 │   ├── projects/my-project/
-│   │   ├── project.yaml         # 项目元信息
+│   │   ├── project.yaml         # 项目元信息、产品注册表、文档路径
+│   │   ├── iteration-bindings.yaml # 项目迭代、产品版本、微服务主分支绑定
 │   │   ├── README.md            # 知识库导航
 │   │   ├── open-questions.md    # 待确认问题
-│   │   ├── prd/                 # 产品需求（待填写）
-│   │   ├── architecture/        # 架构文档（待填写）
-│   │   ├── specs/               # 技术规格（待填写）
-│   │   ├── adr/                 # 架构决策（待填写）
-│   │   ├── workflows/           # 工作流文档（待填写）
+│   │   ├── iterations/          # 项目迭代文档
+│   │   ├── products/            # 产品与微服务文档
 │   │   └── guides/              # 开发指南站点
 │   └── diff-records/
 │       ├── pending.md           # 待处理的变更记录
@@ -109,7 +107,7 @@ docker compose up
 
 1. 你正常写代码，AI agent 辅助开发
 2. 代码变更时，Hook 自动记录到 `.aiops/diff-records/pending.md`
-3. Agent 定期（或被提醒时）执行 `aiops-daily-doc-maintenance`，根据 pending 记录更新相关文档
+3. Agent 定期（或被提醒时）执行 `aiops-daily-doc-maintenance`，先读取 `iteration-bindings.yaml`，再根据 pending 记录更新相关文档
 4. 你也可以随时对 agent 说：**"检查一下知识库是否需要更新"**
 
 治理等级决定了自动化程度。默认是 `high`——agent 在 pending 积累到一定量后自动维护并提交。详见[治理模型](./governance-model.md)。
@@ -122,10 +120,11 @@ docker compose up
 | 只更新技能 | `npx -y @makia9879/aiops install` |
 | 在新的子目录里也给已有项目初始化 | `npx -y @makia9879/aiops init --yes --project <name>` |
 | 交互式配置（手动回答） | 去掉 `--yes`，CLI 会逐项提问 |
-| 指定多个产品域 | `--products CA,RA,KMC,OCSP` |
+| 指定多个产品 | `--products CA,RA,KMC,OCSP` |
+| 配置迭代绑定 | `aiops-governance config-ui --project <name>` |
 | 跳过工具链安装 | `--with none` |
 | 降低治理等级 | `--level medium` |
 | 让 agent 整理知识库 | "帮我整理项目知识库" |
 | 让 agent 检查文档 | "检查一下知识库是否有需要更新的地方" |
 
-详细命令参数见 [CLI 命令参考](./cli-reference.md)，每个技能的能力和边界见[技能说明](./skills.md)。
+详细命令参数见 [CLI 命令参考](./cli-reference.md)，每个技能的能力和边界见[技能说明](./skills.md)。三级结构见[项目、产品、微服务三级结构](./branch-bound-structure.md)，维护前预检见[迭代绑定](./iteration-bindings.md)。

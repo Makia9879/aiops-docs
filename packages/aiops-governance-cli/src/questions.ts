@@ -1,8 +1,22 @@
 export type GovernanceLevel = "low" | "medium" | "high" | "xhigh";
 
+export interface BootstrapService {
+  id: string;
+  codeRoot: string;
+  requiredBranch: string;
+}
+
+export interface BootstrapProduct {
+  id: string;
+  name: string;
+  services: BootstrapService[];
+}
+
 export interface BootstrapAnswers {
   projectId: string;
-  productDomains: string[];
+  products: BootstrapProduct[];
+  projectIteration: string;
+  docsBranch: string;
   governanceLevel: GovernanceLevel;
   knowledgeLanguage: string;
 }
@@ -11,7 +25,8 @@ export interface BootstrapDefaults extends BootstrapAnswers {}
 
 export type BootstrapQuestionId =
   | "projectId"
-  | "productDomains"
+  | "products"
+  | "services"
   | "governanceLevel"
   | "knowledgeLanguage";
 
@@ -40,10 +55,16 @@ export function createBootstrapQuestions(
       help: "kebab-case project identifier under .aiops/projects/"
     },
     {
-      id: "productDomains",
-      label: "Product domains",
-      defaultValue: defaults.productDomains.join(","),
-      help: "comma-separated domains; empty means core"
+      id: "products",
+      label: "Products",
+      defaultValue: defaults.products.map((product) => product.id).join(","),
+      help: "comma-separated products; empty means core"
+    },
+    {
+      id: "services",
+      label: "Services",
+      defaultValue: formatServiceGroups(defaults.products),
+      help: "product:service+service groups; empty means <product>-service"
     },
     {
       id: "governanceLevel",
@@ -73,17 +94,99 @@ export function normalizeProjectId(value: string): string {
   return normalized || "project";
 }
 
-export function parseProductDomains(value: string | undefined): string[] {
+export function createBootstrapProducts(options: {
+  products?: string;
+  services?: string;
+  codeRoot: string;
+  requiredBranch: string;
+}): BootstrapProduct[] {
+  const productIds = parseIdList(options.products, ["core"]);
+  const serviceGroups = parseServiceGroups(options.services, productIds);
+
+  return productIds.map((productId) => ({
+    id: productId,
+    name: productId,
+    services: serviceGroups[productId].map((serviceId) => ({
+      id: serviceId,
+      codeRoot: options.codeRoot,
+      requiredBranch: options.requiredBranch
+    }))
+  }));
+}
+
+function parseIdList(value: string | undefined, fallback: string[]): string[] {
   if (!value || !value.trim()) {
-    return ["core"];
+    return fallback;
   }
 
-  const domains = value
+  const ids = value
     .split(",")
-    .map((domain) => normalizeProjectId(domain))
+    .map((item) => normalizeProjectId(item))
     .filter(Boolean);
 
-  return domains.length > 0 ? Array.from(new Set(domains)) : ["core"];
+  return ids.length > 0 ? Array.from(new Set(ids)) : fallback;
+}
+
+function parseServiceGroups(value: string | undefined, productIds: string[]): Record<string, string[]> {
+  const defaults = Object.fromEntries(
+    productIds.map((productId) => [productId, [`${productId}-service`]])
+  );
+
+  if (!value || !value.trim()) {
+    return defaults;
+  }
+
+  const groups: Record<string, string[]> = { ...defaults };
+  const chunks = value.split(",").map((chunk) => chunk.trim()).filter(Boolean);
+  const hasNamedGroups = chunks.some((chunk) => chunk.includes(":"));
+
+  if (!hasNamedGroups) {
+    if (productIds.length === 1) {
+      groups[productIds[0]] = parseServiceList(value);
+      return groups;
+    }
+
+    const ordered = chunks.map((chunk) => normalizeProjectId(chunk)).filter(Boolean);
+    if (ordered.length === productIds.length) {
+      for (let index = 0; index < productIds.length; index += 1) {
+        groups[productIds[index]] = [ordered[index]];
+      }
+    }
+    return groups;
+  }
+
+  for (const chunk of chunks) {
+    const [rawProduct, rawServices] = chunk.split(":", 2);
+    const productId = normalizeProjectId(rawProduct);
+    if (!productIds.includes(productId)) {
+      continue;
+    }
+    const services = parseServiceList(rawServices);
+    if (services.length > 0) {
+      groups[productId] = services;
+    }
+  }
+
+  return groups;
+}
+
+function parseServiceList(value: string | undefined): string[] {
+  if (!value || !value.trim()) {
+    return [];
+  }
+
+  const services = value
+    .split(/[+|]/)
+    .map((service) => normalizeProjectId(service))
+    .filter(Boolean);
+
+  return services.length > 0 ? Array.from(new Set(services)) : [];
+}
+
+function formatServiceGroups(products: BootstrapProduct[]): string {
+  return products
+    .map((product) => `${product.id}:${product.services.map((service) => service.id).join("+")}`)
+    .join(",");
 }
 
 export function parseGovernanceLevel(value: string): GovernanceLevel {

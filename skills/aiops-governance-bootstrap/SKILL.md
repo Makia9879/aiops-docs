@@ -32,14 +32,16 @@ Use the shared TypeScript question model and TUI when available. The same questi
 Ask only the core questions by default:
 
 1. Project id.
-2. Product domains.
-3. Governance level.
-4. Knowledge language.
+2. Products.
+3. Services under each product.
+4. Governance level.
+5. Knowledge language.
 
 Defaults:
 
 - `project id`: infer from manifest or current directory, kebab-case, then ask for confirmation.
-- `product domains`: empty means `core`.
+- `products`: empty means one product named `core`.
+- `services`: empty means one service with the product id, unless source roots clearly show named services.
 - `governance_level`: `high`.
 - `knowledge_language`: `zh-CN`.
 
@@ -71,13 +73,31 @@ Create missing files and directories without overwriting existing project knowle
   projects/
     <project>/
       project.yaml
+      iteration-bindings.yaml
       README.md
       open-questions.md
-      prd/
-      architecture/
-      specs/
-      adr/
-      workflows/
+      iterations/
+        <project-iteration>/
+          iteration.yaml
+          prd.md
+          architecture.md
+          release-scope.md
+          risks.md
+      products/
+        <product>/
+          product.yaml
+          prd/
+          architecture/
+          workflows/
+          specs/
+          adr/
+          services/
+            <service>/
+              service.yaml
+              architecture/
+              specs/
+              workflows/
+              adr/
       guides/
         package.json
         docker-compose.yaml
@@ -86,6 +106,9 @@ Create missing files and directories without overwriting existing project knowle
           overview.md
           onboarding.md
           change-playbook.md
+          iterations/
+          products/
+          services/
           .vuepress/
             config.ts
   local/
@@ -117,6 +140,53 @@ platform_hooks:
 ```
 
 `.aiops/projects/<project>/project.yaml` is maintained by knowledge workflows. Bootstrap may create safe defaults but must not overwrite human-authored project knowledge.
+
+Project config records stable project identity, product registry, and canonical path roots. It must not store per-iteration branch bindings.
+
+Suggested project baseline:
+
+```yaml
+schema_version: 2
+project: <project>
+governance_level: high
+knowledge_language: zh-CN
+
+canonical_paths:
+  iterations: iterations/
+  products: products/
+  guides: guides/
+
+products:
+  - id: core
+    name: Core
+    path: products/core
+    services:
+      - core
+```
+
+Create `.aiops/projects/<project>/iteration-bindings.yaml` during init. This file is required before maintenance changes canonical docs.
+
+Suggested binding baseline:
+
+```yaml
+schema_version: 1
+project: <project>
+
+iterations:
+  - id: current
+    docs_branch: main
+    docs_path: iterations/current
+    products:
+      - id: core
+        version: current
+        docs_path: products/core
+        services:
+          - id: core
+            code_root: <source-root>
+            required_branch: main
+```
+
+Create missing `product.yaml` and `service.yaml` files for each bootstrapped product and service. These files record stable identity, code root, and docs path only; they must not record local temporary branches or per-iteration branch mappings.
 
 ## Hooks
 
@@ -163,7 +233,15 @@ The guides site is for human reading and should run with:
 docker compose up --build
 ```
 
-Canonical docs remain in `prd/`, `architecture/`, `specs/`, `adr/`, and `workflows/`.
+Canonical docs remain Markdown directories named `prd/`, `architecture/`, `specs/`, `adr/`, and `workflows/`, but those directories are nested under the owning product or service instead of the project root.
+
+Canonical docs are scoped by level:
+
+- project iteration docs live under `iterations/<project-iteration>/`;
+- product docs live under `products/<product>/`;
+- service docs live under `products/<product>/services/<service>/`.
+
+Do not create root-level `prd/`, `architecture/`, `specs/`, `adr/`, or `workflows/` directories for new bootstrap output. Do not create `cross/`, `integration.yaml`, or a cross-product/service version matrix.
 
 ## Trellis
 

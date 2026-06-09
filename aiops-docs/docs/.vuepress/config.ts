@@ -35,7 +35,10 @@ export default defineUserConfig({
         {
           text: "How it works",
           children: [
-            { text: "7. 治理模型", link: "/knowledge/governance-model.md" }
+            { text: "7. 治理模型", link: "/knowledge/governance-model.md" },
+            { text: "8. 三级结构", link: "/knowledge/branch-bound-structure.md" },
+            { text: "9. 迭代绑定", link: "/knowledge/iteration-bindings.md" },
+            { text: "10. config-ui", link: "/knowledge/config-ui.md" }
           ]
         },
         {

@@ -13,6 +13,7 @@ aiops-governance <command> [options]
 | `install` | 安装 AIOps 技能到 agent 运行时目录 | 不修改 |
 | `init` | 在当前项目初始化知识治理结构 | 修改 |
 | `setup` | 先 `install` 再 `init` | 修改 |
+| `config-ui` | 启动本地页面维护迭代绑定配置 | 修改 |
 | `help` | 显示帮助信息 | 不修改 |
 
 ## install
@@ -60,6 +61,7 @@ npx -y @makia9879/aiops init [options]
 
 - `.aiops/` 目录（governance.yaml、hooks/、projects/、diff-records/ 等）
 - `.aiops/projects/<project>/` 项目知识骨架
+- `.aiops/projects/<project>/iteration-bindings.yaml` 迭代绑定配置
 - `.claude/settings.json` 和 `.codex/hooks.json` Hook 配置（追加式写入，不覆盖已有内容）
 - `guides/` VuePress 文档站点模板
 
@@ -69,7 +71,7 @@ npx -y @makia9879/aiops init [options]
 # 最简单的用法
 npx -y @makia9879/aiops init --yes --project my-app
 
-# 多产品域项目
+# 多产品项目
 npx -y @makia9879/aiops init --yes --project cert-auth --products CA,RA,KMC,OCSP
 
 # 最高治理等级
@@ -83,6 +85,18 @@ npx -y @makia9879/aiops init --yes --project my-app --level xhigh
 ```bash
 npx -y @makia9879/aiops setup [options]
 ```
+
+## config-ui
+
+启动本地 HTTP server，并在浏览器里配置项目迭代、产品版本和微服务主分支绑定。
+
+```bash
+aiops-governance config-ui --project certificate-system
+```
+
+`config-ui` 读取 `.aiops/projects/<project>/project.yaml` 和 `iteration-bindings.yaml`，展示项目 -> 产品 -> 微服务树。保存时只应写当前项目的 `iteration-bindings.yaml`，并可安全补齐缺失的 `product.yaml` 和 `service.yaml`。它不执行 `git checkout`，不自动创建或合并分支，不自动提交。
+
+详见 [config-ui 使用说明](./config-ui.md)。
 
 ## 选项表
 
@@ -98,9 +112,24 @@ npx -y @makia9879/aiops setup [options]
 | 选项 | 类型 | 默认值 | 说明 |
 |-----|------|-------|------|
 | `--project <id>` | string | 自动推断 | 项目标识，用作 `.aiops/projects/<id>/` 的目录名。默认从 `package.json` 的 `name` 字段或当前目录名推断 |
-| `--products <list>` | string | `core` | 逗号分隔的子产品域列表。例如 `CA,RA,KMC,OCSP` |
+| `--products <list>` | string | `core` | 逗号分隔的产品列表。例如 `CA,RA,KMC,OCSP` |
+| `--services <groups>` | string | `<product>-service` | 产品到服务的分组，例如 `ca:ca-admin+ca-worker,kmc:kmc-admin` |
+| `--iteration <id>` | string | `current` | 初始化时创建的项目迭代 |
+| `--docs-branch <branch>` | string | `main` | 初始化时写入的文档分支 |
+| `--service-branch <branch>` | string | docs branch | 初始化时写入的微服务主分支 |
+| `--code-root <path>` | string | 当前目录 | 初始化时写入的微服务源码根 |
 | `--level <level>` | string | `high` | 治理等级：`low`、`medium`、`high`、`xhigh` |
 | `--language <lang>` | string | `zh-CN` | 知识文档语言 |
+
+### config-ui 选项
+
+| 选项 | 类型 | 默认值 | 说明 |
+|-----|------|-------|------|
+| `--project <id>` | string | 自动推断 | 指定要维护的项目。多个项目时必须提供 |
+| `--host <host>` | string | `127.0.0.1` | 本地 HTTP server 监听地址 |
+| `--port <port>` | number | 自动 | 本地 HTTP server 端口 |
+| `--no-open` | flag | 关闭 | 只启动 server，不自动打开浏览器 |
+| `--read-only` | flag | 关闭 | 只查看，不允许保存 |
 
 ### 路径覆盖
 

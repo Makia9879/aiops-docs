@@ -12,8 +12,10 @@
 
 ### 1. 结构完整性
 
-- 五类文档目录（prd/、architecture/、specs/、adr/、workflows/）都存在
-- `project.yaml` 存在且不包含机器相关的绝对路径
+- 项目、产品、微服务三级文档落点存在
+- `project.yaml` 存在，能表达项目稳定身份、产品注册表和文档路径
+- `iteration-bindings.yaml` 存在，能表达项目迭代、产品版本和微服务主分支
+- 产品目录下有 `product.yaml`，服务目录下有 `service.yaml`
 - `README.md` 只做导航索引
 - `guides/` 存在且可服务人类阅读
 - `open-questions.md` 存在
@@ -28,17 +30,26 @@
 ### 3. 术语一致性
 
 - 同一概念在所有文档里用同一个词
+- Project Iteration、Product Version、Service Main Branch、Iteration Binding 的含义一致
 - 没有"认证模块"在 PRD 里叫"登录系统"、在 Architecture 里叫"Auth Service"、在 Specs 里叫"identity-provider"这种情况
 - 关键术语在首次出现处有定义
 
-### 4. Agent 可用性
+### 4. 分支绑定完整性
+
+- 每个项目迭代都有 `docs_branch` 和 `docs_path`
+- 每个项目迭代内的产品都有 `version` 和 `docs_path`
+- 每个服务都有 `code_root` 和 `required_branch`
+- 文档不引入微服务版本，也不把本地临时源码分支写入版本模型
+- 维护总结能追溯到项目迭代、产品版本和微服务主分支
+
+### 5. Agent 可用性
 
 - agent 能按稳定路径找到需要的信息
 - 文档结构清晰，标题直接反映内容
 - 关键事实没有被大段叙事淹没
 - 交叉引用可以追溯
 
-### 5. 人类可读性
+### 6. 人类可读性
 
 - `guides/` 里的叙事连贯，能让人理解项目现状
 - 概述、接入指南、变更流程都已覆盖

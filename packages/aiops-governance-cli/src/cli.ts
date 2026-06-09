@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { parseArgs } from "./args.js";
+import { runConfigUi } from "./config-ui.js";
 import { installSkills } from "./install.js";
 import { installToolchain } from "./toolchain/toolchain.js";
 import {
@@ -9,7 +10,7 @@ import {
 import {
   normalizeProjectId,
   parseGovernanceLevel,
-  parseProductDomains,
+  createBootstrapProducts,
   type BootstrapAnswers
 } from "./questions.js";
 import { promptForAnswers } from "./tui.js";
@@ -30,6 +31,18 @@ async function main(): Promise<void> {
   if (args.command === "setup") {
     await runInstall(args);
     await runInit(args);
+    return;
+  }
+
+  if (args.command === "config-ui") {
+    await runConfigUi({
+      cwd: args.cwd,
+      project: args.project,
+      host: args.host ?? "127.0.0.1",
+      port: args.port,
+      open: !args.noOpen,
+      readOnly: args.readOnly
+    });
     return;
   }
 
@@ -64,9 +77,18 @@ async function runInstall(args: ReturnType<typeof parseArgs>): Promise<void> {
 
 async function runInit(args: ReturnType<typeof parseArgs>): Promise<void> {
   const inferredProjectId = normalizeProjectId(args.project ?? (await inferProjectId(args.cwd)));
+  const docsBranch = args.docsBranch ?? args.serviceBranch ?? "main";
+  const serviceBranch = args.serviceBranch ?? docsBranch;
   const defaults: BootstrapAnswers = {
     projectId: inferredProjectId,
-    productDomains: parseProductDomains(args.products),
+    products: createBootstrapProducts({
+      products: args.products,
+      services: args.services,
+      codeRoot: args.codeRoot ?? args.cwd,
+      requiredBranch: serviceBranch
+    }),
+    projectIteration: args.iteration?.trim() || "current",
+    docsBranch,
     governanceLevel: parseGovernanceLevel(args.level ?? "high"),
     knowledgeLanguage: args.language ?? "zh-CN"
   };
@@ -92,13 +114,23 @@ Commands:
   install              Install AIOps skills to agent runtime directories
   init                 Initialize AIOps governance in the current workspace
   setup                Run install, then init
+  config-ui            Start local UI for iteration/product/service bindings
 
 Options:
   -y, --yes            Accept defaults and do not prompt
   --project <id>       Project id under .aiops/projects/
-  --products <list>    Comma-separated product domains; default core
+  --products <list>    Comma-separated products; default core
+  --services <groups>  Service groups, e.g. ca:ca-admin+ca-worker,kmc:kmc-admin
+  --iteration <id>     Initial project iteration id; default current
+  --docs-branch <b>    Initial docs branch; default main
+  --service-branch <b> Initial required service branch; default docs branch
+  --code-root <path>   Initial service code root; default current directory
   --level <level>      low, medium, high, or xhigh; default high
   --language <lang>    Knowledge language; default zh-CN
+  --host <host>        config-ui host; default 127.0.0.1
+  --port <port>        config-ui port; default auto
+  --no-open            config-ui: do not open browser
+  --read-only          config-ui: disable save
   --skills-source <p>  AIOps skill source directory; default discovers ./skills
   --skills-target <p>  Runtime skills directory; default ~/.agents/skills and ~/.codex/skills
   --with <tools>       Toolchain selection: default, none, or comma list

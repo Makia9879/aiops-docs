@@ -2,8 +2,8 @@ import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import {
   createBootstrapQuestions,
+  createBootstrapProducts,
   parseGovernanceLevel,
-  parseProductDomains,
   normalizeProjectId,
   type BootstrapAnswers,
   type BootstrapDefaults
@@ -29,7 +29,14 @@ export async function promptForAnswers(
 
     return {
       projectId: normalizeProjectId(values.get("projectId") ?? defaults.projectId),
-      productDomains: parseProductDomains(values.get("productDomains")),
+      products: createBootstrapProducts({
+        products: values.get("products"),
+        services: values.get("services"),
+        codeRoot: defaults.products[0]?.services[0]?.codeRoot ?? ".",
+        requiredBranch: defaults.products[0]?.services[0]?.requiredBranch ?? "main"
+      }),
+      projectIteration: defaults.projectIteration,
+      docsBranch: defaults.docsBranch,
       governanceLevel: parseGovernanceLevel(
         values.get("governanceLevel") ?? defaults.governanceLevel
       ),
@@ -58,7 +65,14 @@ async function answersFromPipedInput(defaults: BootstrapDefaults): Promise<Boots
 
   return {
     projectId: normalizeProjectId(values.get("projectId") ?? defaults.projectId),
-    productDomains: parseProductDomains(values.get("productDomains")),
+    products: createBootstrapProducts({
+      products: values.get("products"),
+      services: values.get("services"),
+      codeRoot: defaults.products[0]?.services[0]?.codeRoot ?? ".",
+      requiredBranch: defaults.products[0]?.services[0]?.requiredBranch ?? "main"
+    }),
+    projectIteration: defaults.projectIteration,
+    docsBranch: defaults.docsBranch,
     governanceLevel: parseGovernanceLevel(
       values.get("governanceLevel") ?? defaults.governanceLevel
     ),

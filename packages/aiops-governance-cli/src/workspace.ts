@@ -16,10 +16,15 @@ import {
   guidesOverview,
   guidesPackageJson,
   gitignoreEntries,
+  iterationBindingsYaml,
+  iterationDoc,
+  iterationYaml,
   openQuestions,
   pendingMd,
+  productYaml,
   projectReadme,
   projectYaml,
+  serviceYaml,
   vuepressConfig
 } from "./templates.js";
 
@@ -115,18 +120,17 @@ export async function initializeWorkspace(
     created,
     skipped
   );
+  await ensureFile(
+    path.join(projectRoot, "iteration-bindings.yaml"),
+    iterationBindingsYaml(answers),
+    created,
+    skipped
+  );
   await ensureFile(path.join(projectRoot, "README.md"), projectReadme(answers), created, skipped);
   await ensureFile(path.join(projectRoot, "open-questions.md"), openQuestions(), created, skipped);
 
-  for (const category of ["prd", "architecture", "specs", "adr", "workflows"]) {
-    await ensureDir(path.join(projectRoot, category), created, skipped);
-    await ensureFile(
-      path.join(projectRoot, category, "README.md"),
-      categoryReadme(category),
-      created,
-      skipped
-    );
-  }
+  await ensureIterationDocs(projectRoot, answers, created, skipped);
+  await ensureProductDocs(projectRoot, answers, created, skipped);
 
   await ensureGuides(projectRoot, answers, created, skipped);
   await ensurePlatformHookConfigs(workspaceRoot, created, updated, skipped);
@@ -139,6 +143,98 @@ export async function initializeWorkspace(
     updated,
     skipped
   };
+}
+
+async function ensureIterationDocs(
+  projectRoot: string,
+  answers: BootstrapAnswers,
+  created: string[],
+  skipped: string[]
+): Promise<void> {
+  const iterationsRoot = path.join(projectRoot, "iterations");
+  const iterationRoot = path.join(iterationsRoot, answers.projectIteration);
+
+  await ensureDir(iterationsRoot, created, skipped);
+  await ensureDir(iterationRoot, created, skipped);
+  await ensureFile(
+    path.join(iterationRoot, "iteration.yaml"),
+    iterationYaml(answers.projectId, answers.projectIteration),
+    created,
+    skipped
+  );
+  for (const file of ["prd.md", "architecture.md", "release-scope.md", "risks.md"]) {
+    await ensureFile(
+      path.join(iterationRoot, file),
+      iterationDoc(file.replace(/\.md$/, ""), answers.projectIteration),
+      created,
+      skipped
+    );
+  }
+}
+
+async function ensureProductDocs(
+  projectRoot: string,
+  answers: BootstrapAnswers,
+  created: string[],
+  skipped: string[]
+): Promise<void> {
+  const productsRoot = path.join(projectRoot, "products");
+  await ensureDir(productsRoot, created, skipped);
+
+  for (const product of answers.products) {
+    const productRoot = path.join(productsRoot, product.id);
+    await ensureDir(productRoot, created, skipped);
+    await ensureFile(
+      path.join(productRoot, "product.yaml"),
+      productYaml(answers.projectId, product),
+      created,
+      skipped
+    );
+
+    for (const category of ["prd", "architecture", "specs", "adr", "workflows"]) {
+      await ensureDir(path.join(productRoot, category), created, skipped);
+      await ensureFile(
+        path.join(productRoot, category, "README.md"),
+        categoryReadme(category),
+        created,
+        skipped
+      );
+    }
+
+    await ensureServiceDocs(productRoot, answers.projectId, product, created, skipped);
+  }
+}
+
+async function ensureServiceDocs(
+  productRoot: string,
+  projectId: string,
+  product: BootstrapAnswers["products"][number],
+  created: string[],
+  skipped: string[]
+): Promise<void> {
+  const servicesRoot = path.join(productRoot, "services");
+  await ensureDir(servicesRoot, created, skipped);
+
+  for (const service of product.services) {
+    const serviceRoot = path.join(servicesRoot, service.id);
+    await ensureDir(serviceRoot, created, skipped);
+    await ensureFile(
+      path.join(serviceRoot, "service.yaml"),
+      serviceYaml(projectId, product, service),
+      created,
+      skipped
+    );
+
+    for (const category of ["architecture", "specs", "adr", "workflows"]) {
+      await ensureDir(path.join(serviceRoot, category), created, skipped);
+      await ensureFile(
+        path.join(serviceRoot, category, "README.md"),
+        categoryReadme(category),
+        created,
+        skipped
+      );
+    }
+  }
 }
 
 async function ensureGuides(
@@ -179,6 +275,9 @@ async function ensureGuides(
     created,
     skipped
   );
+  for (const section of ["iterations", "products", "services"]) {
+    await ensureDir(path.join(docsRoot, section), created, skipped);
+  }
   await ensureDir(vuepressRoot, created, skipped);
   await ensureFile(
     path.join(vuepressRoot, "config.ts"),

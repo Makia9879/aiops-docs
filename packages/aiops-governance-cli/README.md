@@ -1,176 +1,152 @@
 # AIOps Governance CLI
 
-AIOps 知识治理命令行工具 — 为 AI 辅助开发的工程团队提供标准化的知识管理基础设施。
+AIOps 知识治理命令行工具，为 AI 辅助开发的工程团队提供标准化的项目知识治理基础设施。
 
-Executable workspace bootstrap for AIOps knowledge governance — standardized knowledge management infrastructure for AI-assisted engineering teams.
+## 核心能力
 
-## 仓库内容 / What's Inside
+- `install`: 安装 AIOps 治理技能到 agent 运行时目录。
+- `init`: 初始化 `.aiops/`，生成项目、产品、微服务三级知识骨架。
+- `setup`: 顺序执行 `install` 和 `init`。
+- `config-ui`: 启动本地浏览器页面，维护项目迭代、产品版本、微服务代码根和微服务主分支绑定。
 
-本仓库是 `@makia9879/aiops` npm 包的源码，提供以下核心能力：
+## 工作空间结构
 
-- **技能安装 (`install`)** — 将 6 个 AIOps 治理技能安装到 AI Agent 运行时目录（Claude Code、Codex 等），让 AI 助手获得知识管理领域能力。
-- **工作空间初始化 (`init`)** — 在项目根目录创建 `.aiops/` 知识治理结构，包括项目骨架、治理配置、开发指南、知识文档模板、平台 Hook 配置等。
-- **工具链安装** — 自动安装固定版本的辅助工具包（CodeGraph、Understand Anything、Trellis），并为可执行 CLI 工具创建 shim。
-
-### 内置技能 / Bundled Skills
-
-| 技能名称 | 功能描述 |
-|---------|---------|
-| `aiops-daily-doc-maintenance` | 日常文档维护 |
-| `aiops-governance-bootstrap` | 治理引导初始化 |
-| `aiops-historical-project-intake` | 历史项目知识入库 |
-| `aiops-knowledge-lifecycle` | 知识生命周期管理 |
-| `aiops-knowledge-review` | 知识审查 |
-| `aiops-new-project-briefing` | 新项目知识简报 |
-
-### 工作空间结构 / Workspace Structure
-
-```
+```text
 .aiops/
-├── governance.yaml          # 治理配置
-├── hooks/                   # 工作空间 Hook 脚本
-├── projects/<project-id>/   # 项目知识目录
-│   ├── project.yaml         # 项目配置
-│   ├── README.md            # 项目知识索引
-│   ├── open-questions.md    # 待解决问题
-│   ├── prd/                 # 产品需求文档
-│   ├── architecture/        # 架构文档
-│   ├── specs/               # 技术规格
-│   ├── adr/                 # 架构决策记录
-│   ├── workflows/           # 工作流文档
-│   └── guides/              # VuePress 开发指南
-├── local/                   # 本地配置
-├── cache/                   # 缓存
-├── tmp/                     # 临时文件
-└── diff-records/            # 差异记录
+  governance.yaml
+  hooks/
+  diff-records/
+    pending.md
+    archived/
+  projects/
+    <project>/
+      project.yaml
+      iteration-bindings.yaml
+      README.md
+      open-questions.md
+      iterations/<project-iteration>/
+      products/<product>/
+        product.yaml
+        prd/
+        architecture/
+        specs/
+        workflows/
+        adr/
+        services/<service>/
+          service.yaml
+          architecture/
+          specs/
+          workflows/
+          adr/
+      guides/
+  local/
+  cache/
+  tmp/
 ```
 
-## 安装方法 / Installation
+`project.yaml` 记录稳定项目和产品/服务注册表。`iteration-bindings.yaml` 记录：
 
-### 通过 npx 直接运行（推荐）
-
-无需安装，直接运行：
-
-```bash
-npx -y @makia9879/aiops <command> [options]
+```text
+项目迭代 -> 产品版本 -> 微服务主分支
 ```
 
-### 全局安装
+维护 canonical docs 前，agent 必须读取迭代绑定，并检查服务 `code_root` 当前分支是否等于 `required_branch`。
 
-```bash
-npm install -g @makia9879/aiops
-```
-
-安装后可直接使用 `aiops-governance` 命令：
-
-```bash
-aiops-governance setup --yes --project my-project
-```
-
-### Docker 开发环境
-
-在仓库内开发验证时，使用 Docker 避免依赖宿主机 Node 环境：
-
-```bash
-# 完整流程
-docker run --rm -it \
-  -v "$PWD":/repo \
-  -w /repo/packages/aiops-governance-cli \
-  node:24-bookworm \
-  bash -lc "npm ci && npm run build && node dist/cli.js setup --yes --with none --project cert-auth --products CA,RA,KMC,OCSP"
-
-# 使用自定义技能源验证
-docker run --rm -it \
-  -v "$PWD":/repo \
-  -w /repo/packages/aiops-governance-cli \
-  node:24-bookworm \
-  bash -lc "npm ci && npm run build && node dist/cli.js install --skills-source /repo/skills --skills-target /tmp/aiops-skills"
-```
-
-## 使用方法 / Usage
-
-### 命令概览
+## 使用
 
 ```bash
 aiops-governance <command> [options]
 ```
 
 | 命令 | 说明 |
-|-----|------|
-| `install` | 安装 AIOps 技能到 Agent 运行时目录 |
-| `init`   | 初始化当前工作空间的 AIOps 治理结构 |
-| `setup`  | 依次执行 `install` + `init`（一步到位） |
+| --- | --- |
+| `install` | 安装 AIOps 技能到 agent 运行时目录 |
+| `init` | 初始化当前工作空间的 AIOps 治理结构 |
+| `setup` | 依次执行 `install` + `init` |
+| `config-ui` | 启动本地配置 UI |
 
-### 快速开始
-
-在新项目中一步完成初始化：
-
-```bash
-npx -y @makia9879/aiops setup --yes --project my-app --products core
-```
-
-使用交互式问答模式（不加 `--yes`）：
+### init
 
 ```bash
-npx -y @makia9879/aiops setup --project my-app
+aiops-governance init --yes --project cert-system --products ca,kmc --services ca:ca-admin,kmc:kmc-admin
 ```
 
-### 仅安装技能
+可选绑定默认值：
 
 ```bash
-# 安装全部技能 + 默认工具链
-npx -y @makia9879/aiops install
-
-# 只安装技能，跳过工具链
-npx -y @makia9879/aiops install --with none
-
-# 选择性安装工具
-npx -y @makia9879/aiops install --with codegraph,trellis
-
-# 指定技能源和目标目录
-npx -y @makia9879/aiops install \
-  --skills-source /path/to/skills \
-  --skills-target /custom/skills/dir
+aiops-governance init --yes \
+  --project cert-system \
+  --products ca \
+  --services ca:ca-admin \
+  --iteration develop_1.0.0 \
+  --docs-branch develop_1.0.0 \
+  --service-branch develop_1.0.0 \
+  --code-root /Users/makia98/lij/work/CA/ca_admin
 ```
 
-### 仅初始化工作空间
+### config-ui
 
 ```bash
-npx -y @makia9879/aiops init --yes --project my-app --products CA,RA --level high --language zh-CN
+aiops-governance config-ui --project cert-system
 ```
 
-### 选项说明
+选项：
 
-| 选项 | 类型 | 默认值 | 说明 |
-|-----|------|-------|------|
-| `-y, --yes` | flag | `false` | 跳过交互式问答，使用默认值或命令行参数 |
-| `--project <id>` | string | 自动推断 | 项目标识，存储在 `.aiops/projects/<id>/` |
-| `--products <list>` | string | `core` | 产品域列表，逗号分隔，如 `CA,RA,KMC,OCSP` |
-| `--level <level>` | string | `high` | 治理等级：`low` / `medium` / `high` / `xhigh` |
-| `--language <lang>` | string | `zh-CN` | 知识文档语言，默认简体中文 |
-| `--skills-source <path>` | string | 自动发现 | 覆盖技能源目录 |
-| `--skills-target <path>` | string | `~/.agents/skills` 和 `~/.codex/skills` | 覆盖运行时技能目录 |
-| `--with <tools>` | string | `default` | 工具链选择：`default` / `none` / 逗号分隔列表 |
-| `--tools-root <path>` | string | `~/.aiops/tools` | 工具安装根目录 |
+```text
+--project <id>       指定项目 id
+--host <host>        默认 127.0.0.1
+--port <port>        默认自动选择可用端口
+--no-open            只启动 server，不自动打开浏览器
+--read-only          只查看，不允许保存
+```
 
-### 工具链说明
+保存边界：
 
-默认安装以下工具包到 `~/.aiops/tools`，带有 CLI bin 的包会在 `~/.aiops/bin` 创建 shim：
+- 只写当前项目的 `iteration-bindings.yaml`。
+- 只补齐缺失的 `product.yaml` 和 `service.yaml`。
+- 不覆盖已有人工维护字段。
+- 不执行 `git checkout`。
+- 不自动创建、删除或合并分支。
+- 不自动提交。
 
-- `@colbymchenry/codegraph@0.9.9`
-- `@understand-anything/skill@2.7.6`
-- `@mindfoldhq/trellis@0.5.19`
+### install
 
-## 发布 / Publish
+```bash
+aiops-governance install --with none
+```
+
+默认安装固定版本工具链，可用 `--with none` 跳过。
+
+## 选项
+
+| 选项 | 默认值 | 说明 |
+| --- | --- | --- |
+| `-y, --yes` | 关闭 | 跳过交互式问答 |
+| `--project <id>` | 自动推断 | 项目标识 |
+| `--products <list>` | `core` | 逗号分隔的产品列表 |
+| `--services <groups>` | `<product>-service` | 服务分组，例如 `ca:ca-admin+ca-worker,kmc:kmc-admin` |
+| `--iteration <id>` | `current` | 初始项目迭代 |
+| `--docs-branch <branch>` | `main` | 初始文档分支 |
+| `--service-branch <branch>` | docs branch | 初始服务主分支 |
+| `--code-root <path>` | 当前目录 | 初始服务代码根 |
+| `--level <level>` | `high` | `low` / `medium` / `high` / `xhigh` |
+| `--language <lang>` | `zh-CN` | 知识文档语言 |
+| `--skills-source <path>` | 自动发现 | 覆盖技能源目录 |
+| `--skills-target <path>` | runtime 默认目录 | 覆盖运行时技能目录 |
+| `--with <tools>` | `default` | `default` / `none` / 逗号分隔工具列表 |
+| `--tools-root <path>` | `~/.aiops/tools` | 工具安装根目录 |
+
+## Docker 验证
+
+在本仓库内不要直接运行宿主机 `npm`、`npx`、`node` 或 `python`。开发验证使用 Docker：
+
+```bash
+docker run --rm -v "$PWD":/repo -w /repo/packages/aiops-governance-cli node:24-bookworm \
+  bash -lc "npm ci && npm run check && npm run build"
+```
+
+## 发布
 
 当前版本：`0.1.0`，发布标签：`v0.1.0`。
 
-```bash
-# 预发布校验
-NPM_TOKEN=<token> DRY_RUN=true scripts/publish-aiops-npm.sh
-
-# 正式发布
-NPM_TOKEN=<token> DRY_RUN=false scripts/publish-aiops-npm.sh
-```
-
-发布脚本全程在 `node:24-bookworm` 容器内运行，自动完成版本校验、技能打包、类型检查、`npm pack --dry-run` 和 `npm publish --access public`。
+发布脚本 `scripts/publish-aiops-npm.sh` 在 `node:24-bookworm` 容器内运行，`NPM_TOKEN` 从环境变量或 CI secret 提供。

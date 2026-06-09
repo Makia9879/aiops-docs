@@ -1,14 +1,23 @@
 export interface ParsedArgs {
-  command: "install" | "init" | "setup" | "help";
+  command: "install" | "init" | "setup" | "config-ui" | "help";
   yes: boolean;
   project?: string;
   products?: string;
+  services?: string;
+  iteration?: string;
+  docsBranch?: string;
+  serviceBranch?: string;
+  codeRoot?: string;
   level?: string;
   language?: string;
   skillsSource?: string;
   skillsTarget?: string;
   withTools?: string;
   toolsRoot?: string;
+  host?: string;
+  port?: number;
+  noOpen: boolean;
+  readOnly: boolean;
   cwd: string;
 }
 
@@ -18,6 +27,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
   const parsed: ParsedArgs = {
     command,
     yes: false,
+    noOpen: false,
+    readOnly: false,
     cwd: process.cwd()
   };
 
@@ -57,6 +68,56 @@ export function parseArgs(argv: string[]): ParsedArgs {
       continue;
     }
 
+    if (arg === "--services") {
+      parsed.services = readOptionValue(arg, args);
+      continue;
+    }
+
+    if (arg.startsWith("--services=")) {
+      parsed.services = arg.slice("--services=".length);
+      continue;
+    }
+
+    if (arg === "--iteration") {
+      parsed.iteration = readOptionValue(arg, args);
+      continue;
+    }
+
+    if (arg.startsWith("--iteration=")) {
+      parsed.iteration = arg.slice("--iteration=".length);
+      continue;
+    }
+
+    if (arg === "--docs-branch") {
+      parsed.docsBranch = readOptionValue(arg, args);
+      continue;
+    }
+
+    if (arg.startsWith("--docs-branch=")) {
+      parsed.docsBranch = arg.slice("--docs-branch=".length);
+      continue;
+    }
+
+    if (arg === "--service-branch") {
+      parsed.serviceBranch = readOptionValue(arg, args);
+      continue;
+    }
+
+    if (arg.startsWith("--service-branch=")) {
+      parsed.serviceBranch = arg.slice("--service-branch=".length);
+      continue;
+    }
+
+    if (arg === "--code-root") {
+      parsed.codeRoot = readOptionValue(arg, args);
+      continue;
+    }
+
+    if (arg.startsWith("--code-root=")) {
+      parsed.codeRoot = arg.slice("--code-root=".length);
+      continue;
+    }
+
     if (arg === "--level") {
       parsed.level = readOptionValue(arg, args);
       continue;
@@ -74,6 +135,36 @@ export function parseArgs(argv: string[]): ParsedArgs {
 
     if (arg.startsWith("--language=")) {
       parsed.language = arg.slice("--language=".length);
+      continue;
+    }
+
+    if (arg === "--host") {
+      parsed.host = readOptionValue(arg, args);
+      continue;
+    }
+
+    if (arg.startsWith("--host=")) {
+      parsed.host = arg.slice("--host=".length);
+      continue;
+    }
+
+    if (arg === "--port") {
+      parsed.port = parsePort(readOptionValue(arg, args));
+      continue;
+    }
+
+    if (arg.startsWith("--port=")) {
+      parsed.port = parsePort(arg.slice("--port=".length));
+      continue;
+    }
+
+    if (arg === "--no-open") {
+      parsed.noOpen = true;
+      continue;
+    }
+
+    if (arg === "--read-only") {
+      parsed.readOnly = true;
       continue;
     }
 
@@ -128,11 +219,19 @@ function parseCommand(value: string | undefined): ParsedArgs["command"] {
     return "help";
   }
 
-  if (value === "install" || value === "init" || value === "setup") {
+  if (value === "install" || value === "init" || value === "setup" || value === "config-ui") {
     return value;
   }
 
   throw new Error(`Unknown command: ${value}`);
+}
+
+function parsePort(value: string): number {
+  const port = Number.parseInt(value, 10);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    throw new Error(`Invalid port: ${value}`);
+  }
+  return port;
 }
 
 function readOptionValue(option: string, args: string[]): string {

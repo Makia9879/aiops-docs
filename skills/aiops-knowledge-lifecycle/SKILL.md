@@ -9,6 +9,12 @@ description: Routes AIOps knowledge-base work across historical project intake, 
 
 Manage workspace-level AIOps knowledge governance. The governed object is the whole workspace, with project knowledge stored under `.aiops/projects/<project>/`.
 
+The canonical structure is project -> product -> service:
+
+- project iteration docs live under `.aiops/projects/<project>/iterations/<project-iteration>/`;
+- product docs live under `.aiops/projects/<project>/products/<product>/`;
+- service docs live under `.aiops/projects/<project>/products/<product>/services/<service>/`.
+
 The lifecycle covers:
 
 - Bootstrap: install governance structure, project skeleton, guides site, hooks, and defaults.
@@ -19,6 +25,14 @@ The lifecycle covers:
 
 Canonical docs are Markdown-first. Do not require JSONL, per-file frontmatter, or structured metadata beyond the project/workspace config files.
 
+Project iteration binding is mandatory before maintenance. Workflows that write canonical docs must read `.aiops/projects/<project>/iteration-bindings.yaml` and maintain docs against:
+
+```text
+project iteration -> product version -> service required_branch
+```
+
+Products have versions. Services have required main branches. Do not create service versions or document versions for local temporary source branches.
+
 ## Route
 
 Before running any governance workflow:
@@ -27,6 +41,9 @@ Before running any governance workflow:
 2. If found, use that `.aiops/` as the workspace governance root.
 3. If missing, tell the human that AIOps governance is not initialized and run `aiops-governance-bootstrap`, unless the human explicitly refuses.
 4. If the user asks for `install`, `init`, or `setup`, route to `aiops-governance-bootstrap`.
+5. For any workflow that writes canonical docs, identify the project and selected project iteration, then read `project.yaml` and `iteration-bindings.yaml`.
+6. For service-level writes, compare each impacted service `code_root` current branch with the iteration binding `required_branch`.
+7. If a service current branch does not match `required_branch`, do not modify canonical docs by default. Remind the human to switch branches or explicitly confirm that this maintenance still belongs to the selected project iteration. Until confirmation, record the mismatch in pending records or open questions.
 
 Classify the user's request:
 
@@ -69,6 +86,8 @@ skills/aiops-knowledge-lifecycle/references/
 Canonical knowledge documents are for coding agents first. Prefer concrete file paths, entry points, invariants, impact boundaries, and validation commands over broad narrative.
 
 Human-friendly reading belongs in `.aiops/projects/<project>/guides/docs/`. Keep project `README.md` as an index/navigation page, not a long article.
+
+External upstream/downstream relationships belong in the current product or service canonical docs. Include call entry points, protocol, responsibility boundary, error semantics, and validation path where evidence exists. Do not create `cross/`, `integration.yaml`, or independent cross-product/service matrices.
 
 ## Governance Levels
 

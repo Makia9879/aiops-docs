@@ -6,34 +6,32 @@
 
 ## 治理对象
 
-治理对象是 workspace 下的项目级知识。一个项目可以包含多个子产品，例如数字证书认证系统里可能同时存在 CA、RA、KMC、OCSP。文档需要先建立项目边界，再把子产品放进同一个知识体系中描述。
+治理对象是 workspace 下的项目级知识。一个项目可以包含多个产品，每个产品下可以包含多个微服务。例如数字证书认证系统里可能同时存在 CA、RA、KMC、OCSP 等产品，并分别对应独立代码服务。文档需要先建立项目边界，再识别产品、微服务和外部上下游关系。
 
 推荐落点：
 
 ```text
 .aiops/projects/<project>/
   project.yaml
+  iteration-bindings.yaml
   README.md
   open-questions.md
-  prd/
-  architecture/
-  specs/
-  adr/
-  workflows/
+  iterations/
+  products/
   guides/
 ```
 
-其中 `README.md` 只做导航索引，面向人阅读的连续叙事放在 `guides/`，面向 agent 召回的事实文档放在 `prd/`、`architecture/`、`specs/`、`adr/`、`workflows/`。
+其中 `README.md` 只做导航索引，面向人阅读的连续叙事放在 `guides/`，面向 agent 召回的事实文档放在 `iterations/` 和 `products/` 下。产品级目录承载产品版本、能力边界和产品内微服务划分；微服务级目录承载服务接口、模型、流程和验证入口。
 
 ## 生成顺序
 
 历史项目不要一开始就追求文档齐全。第一轮应先解决 agent 进入项目所需的最低知识闭环。
 
-1. 识别 workspace、项目和子产品边界。
+1. 识别 workspace、项目、产品和微服务边界。
 2. 扫描源码入口、manifest、配置、测试、已有文档。
 3. 使用 `understand-anything` 建立项目理解，必要时使用 `codegraph` 辅助定位调用关系。
 4. 生成项目索引和开放问题。
-5. 按 PRD、architecture、specs、adr、workflows 五类粒度沉淀事实。
+5. 按项目、产品、微服务三级落点沉淀 PRD、architecture、specs、adr、workflows 事实。
 6. 为人补一份 `guides/` 阅读入口。
 
 第一轮最重要的是 architecture 和 workflows。architecture 让 agent 知道模块和依赖方向，workflows 让 agent 知道关键业务链路如何流经代码。没有这两类文档，后续维护很容易变成局部猜测。
@@ -42,7 +40,7 @@
 
 `prd/` 写项目为什么存在、服务谁、解决什么问题、不解决什么问题。历史项目的 PRD 从代码能力、用户入口、配置项、测试用例和已有说明中反推，再把不确定内容写进 `open-questions.md`。
 
-`architecture/` 写系统边界、子产品关系、模块职责、依赖方向、运行时组件、数据流和部署形态。对于包含 CA、RA、KMC、OCSP 这类子产品的项目，architecture 必须说明它们之间的责任边界和交互路径。
+`architecture/` 写系统边界、产品关系、微服务职责、依赖方向、运行时组件、数据流和部署形态。对于包含 CA、RA、KMC、OCSP 这类产品的项目，architecture 必须说明它们之间的责任边界和交互路径。
 
 `specs/` 写具体接口、命令、配置、数据结构、协议、任务和行为约束。specs 是 agent 修改代码时最常被召回的事实层。
 
@@ -67,8 +65,8 @@
 
 合格的历史项目文档，应让 agent 能回答这些问题：
 
-- workspace 里有哪些项目和子产品？
-- 每个子产品的职责边界是什么？
+- workspace 里有哪些项目、产品和微服务？
+- 每个产品和微服务的职责边界是什么？
 - 核心业务流程经过哪些模块和文件？
 - 修改某类能力时应该召回哪些文档和源码？
 - 哪些接口、配置、数据结构不能随意改变？

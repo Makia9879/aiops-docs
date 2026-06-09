@@ -1,14 +1,14 @@
-import type { BootstrapAnswers } from "./questions.js";
+import type { BootstrapAnswers, BootstrapProduct, BootstrapService } from "./questions.js";
 
 export function governanceYaml(answers: BootstrapAnswers): string {
   return `schema_version: 1
-default_project: ${answers.projectId}
+default_project: ${yamlString(answers.projectId)}
 governance_level: ${answers.governanceLevel}
-knowledge_language: ${answers.knowledgeLanguage}
+knowledge_language: ${yamlString(answers.knowledgeLanguage)}
 projects_root: .aiops/projects
 diff_records: .aiops/diff-records/pending.md
 projects:
-  - ${answers.projectId}
+  - ${yamlString(answers.projectId)}
 platform_hooks:
   codex:
     status: installed
@@ -27,27 +27,59 @@ export function projectYaml(
   answers: BootstrapAnswers,
   tools: { trellis: "detected" | "unknown" } = { trellis: "unknown" }
 ): string {
-  return `schema_version: 1
-project: ${answers.projectId}
-display_name: ${answers.projectId}
+  return `schema_version: 2
+project: ${yamlString(answers.projectId)}
+display_name: ${yamlString(answers.projectId)}
 governance_level: ${answers.governanceLevel}
-knowledge_language: ${answers.knowledgeLanguage}
-knowledge_status: draft
-products:
-${answers.productDomains.map((domain) => `  - id: ${domain}\n    name: ${domain}`).join("\n")}
-source_roots: []
-source_roots_status: inferred
+knowledge_language: ${yamlString(answers.knowledgeLanguage)}
 canonical_paths:
-  prd: prd/
-  architecture: architecture/
-  specs: specs/
-  adr: adr/
-  workflows: workflows/
+  iterations: iterations/
+  products: products/
   guides: guides/
+products:
+${answers.products.map(productRegistryYaml).join("\n")}
 tools:
   understand_anything: unknown
   codegraph: unknown
   trellis: ${tools.trellis}
+`;
+}
+
+export function iterationBindingsYaml(answers: BootstrapAnswers): string {
+  return `schema_version: 1
+project: ${yamlString(answers.projectId)}
+
+iterations:
+  - id: ${yamlString(answers.projectIteration)}
+    docs_branch: ${yamlString(answers.docsBranch)}
+    docs_path: ${yamlString(`iterations/${answers.projectIteration}`)}
+    products:
+${answers.products.map((product) => iterationProductYaml(product, answers.projectIteration)).join("\n")}
+`;
+}
+
+export function productYaml(projectId: string, product: BootstrapProduct): string {
+  return `product: ${yamlString(product.id)}
+project: ${yamlString(projectId)}
+name: ${yamlString(product.name)}
+
+services:
+${product.services.map((service) => `  - id: ${yamlString(service.id)}
+    code_root: ${yamlString(service.codeRoot)}
+    docs_path: ${yamlString(`services/${service.id}`)}`).join("\n")}
+`;
+}
+
+export function serviceYaml(
+  projectId: string,
+  product: BootstrapProduct,
+  service: BootstrapService
+): string {
+  return `service: ${yamlString(service.id)}
+product: ${yamlString(product.id)}
+project: ${yamlString(projectId)}
+code_root: ${yamlString(service.codeRoot)}
+docs_path: ${yamlString(`products/${product.id}/services/${service.id}`)}
 `;
 }
 
@@ -65,16 +97,13 @@ This directory is the canonical AIOps knowledge base for this project.
 
 ## Navigation
 
-- PRD: ./prd/
-- Architecture: ./architecture/
-- Specs: ./specs/
-- ADR: ./adr/
-- Workflows: ./workflows/
+- Project iterations: ./iterations/
+- Products: ./products/
 - Human guides: ./guides/
 
-## Product Domains
+## Products
 
-${answers.productDomains.map((domain) => `- ${domain}`).join("\n")}
+${answers.products.map((product) => `- ${product.id}: ${product.services.map((service) => service.id).join(", ")}`).join("\n")}
 `;
 }
 
@@ -99,6 +128,20 @@ export function categoryReadme(title: string): string {
   return `# ${title}
 
 Add ${title.toLowerCase()} knowledge for this project here.
+`;
+}
+
+export function iterationYaml(projectId: string, iteration: string): string {
+  return `project: ${yamlString(projectId)}
+iteration: ${yamlString(iteration)}
+status: draft
+`;
+}
+
+export function iterationDoc(title: string, iteration: string): string {
+  return `# ${title}
+
+Summary: Add ${iteration} ${title.toLowerCase()} here.
 `;
 }
 
@@ -142,13 +185,16 @@ This site is the human-readable guide layer for the project knowledge base.
 - [Overview](./overview.md)
 - [Onboarding](./onboarding.md)
 - [Change Playbook](./change-playbook.md)
+- Iterations: ./iterations/
+- Products: ./products/
+- Services: ./services/
 `;
 }
 
 export function guidesOverview(projectId: string): string {
   return `# Overview
 
-Summarize what ${projectId} does, who uses it, and which product domains it contains.
+Summarize what ${projectId} does, who uses it, which products it contains, and which services belong to those products.
 `;
 }
 
@@ -178,4 +224,30 @@ export default defineUserConfig({
   theme: null
 });
 `;
+}
+
+function productRegistryYaml(product: BootstrapProduct): string {
+  return `  - id: ${yamlString(product.id)}
+    name: ${yamlString(product.name)}
+    path: ${yamlString(`products/${product.id}`)}
+    services:
+${product.services.map((service) => `      - ${yamlString(service.id)}`).join("\n")}`;
+}
+
+function iterationProductYaml(product: BootstrapProduct, iteration: string): string {
+  return `      - id: ${yamlString(product.id)}
+        version: ${yamlString(iteration)}
+        docs_path: ${yamlString(`products/${product.id}`)}
+        services:
+${product.services.map(iterationServiceYaml).join("\n")}`;
+}
+
+function iterationServiceYaml(service: BootstrapService): string {
+  return `          - id: ${yamlString(service.id)}
+            code_root: ${yamlString(service.codeRoot)}
+            required_branch: ${yamlString(service.requiredBranch)}`;
+}
+
+function yamlString(value: string): string {
+  return JSON.stringify(value);
 }

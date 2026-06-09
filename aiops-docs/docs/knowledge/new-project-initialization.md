@@ -11,13 +11,22 @@
 ```text
 .aiops/projects/<project>/
   project.yaml
+  iteration-bindings.yaml
   README.md
   open-questions.md
-  prd/
-  architecture/
-  specs/
-  adr/
-  workflows/
+  iterations/
+    <project-iteration>/
+  products/
+    <product>/
+      product.yaml
+      prd/
+      architecture/
+      workflows/
+      specs/
+      adr/
+      services/
+        <service>/
+          service.yaml
   guides/
     package.json
     docker-compose.yaml
@@ -32,16 +41,22 @@
 
 `.aiops/projects/<project>/` 是 canonical docs。`guides/` 是面向人阅读的 VuePress 站点模板，可用 Docker Compose 直接打开静态页面查看。
 
+`project.yaml` 记录项目稳定身份、产品注册表和文档路径。`iteration-bindings.yaml` 记录项目迭代、产品版本和微服务主分支，不记录本地临时源码分支。
+
 ## 引导问题
 
 初始化应使用 TypeScript question model 和 TUI 引导人类回答，skills 也复用同一套问题模型来指导 LLM 提问。默认答案要足够好，让使用者不必理解全部配置。
 
-核心问题只有四个：
+核心问题应覆盖项目、产品、微服务和迭代绑定：
 
 | 问题 | 默认策略 |
 | --- | --- |
 | project id | 从 manifest 或当前目录推断为 kebab-case，但需要人确认。 |
-| product domains | 为空时默认 `core`。 |
+| products | 为空时默认 `core`。 |
+| services | 根据产品和源码根推断；无法确认时先放入待确认问题。 |
+| project iteration | 从当前文档分支或人类输入确认。 |
+| product versions | 默认跟随项目迭代，可由人类覆盖。 |
+| service main branches | 默认使用当前源码主分支；必须写入 `iteration-bindings.yaml`。 |
 | governance level | 默认 `high`。 |
 | knowledge language | 默认 `zh-CN`。 |
 
@@ -80,6 +95,8 @@
 npx -y @makia9879/aiops setup --yes --project cert-auth --products CA,RA,KMC,OCSP
 ```
 
+后续 `config-ui` 子命令落地后，可以用本地浏览器页面维护 `iteration-bindings.yaml`，避免手写项目迭代、产品版本和微服务主分支矩阵。
+
 `install` 默认会安装 AIOps skills，并按固定版本安装 `codegraph`、`understand-anything`、`trellis` 工具链。固定版本号集中维护在 CLI 包的 `src/toolchain/versions.json`。
 
 在本 workspace 内开发和验证 CLI 时，遵守运行约束，不在宿主机直接执行 `npm`、`npx`、`node`，而是用临时 Docker node 镜像运行：
@@ -110,8 +127,9 @@ Trellis 是辅助工具，canonical source 仍然是 `.aiops/projects/<project>/
 一次合格的新项目初始化，应满足：
 
 - workspace 和 project 边界清楚。
-- 子产品或 product domains 已被记录，即使一开始只有 `core`。
-- PRD、architecture、specs、adr、workflows 五类粒度已经建立。
+- products 和 services 已被记录，即使一开始只有 `core`。
+- `iteration-bindings.yaml` 能表达项目迭代、产品版本和微服务主分支。
+- 项目、产品、微服务三级文档落点已经建立。
 - guides 可服务人类阅读。
 - Codex 和 Claude Code hooks 可以被幂等安装。
 - 默认配置足够可用，普通 engineer 不需要先理解整套治理理论。

@@ -35,12 +35,14 @@
 
 ## 引导问题
 
-初始化时可以交互式回答 4 个核心问题（加 `--yes` 则全部使用默认值）：
+初始化时核心问题应覆盖项目、产品、微服务和治理默认值（加 `--yes` 则使用可推断默认值）：
 
 | 问题 | 默认值 | 说明 |
 |-----|-------|------|
 | 项目 ID | 从 `package.json` 或目录名推断 | kebab-case 格式 |
-| 子产品域 | `core` | 多个子产品用逗号分隔 |
+| 产品 | `core` | 多个产品用逗号分隔 |
+| 微服务 | 从源码根或产品注册表推断 | 无法确认时写入待确认问题 |
+| 项目迭代 | 从文档分支或人类输入确认 | 写入 `iteration-bindings.yaml` |
 | 治理等级 | `high` | low / medium / high / xhigh |
 | 文档语言 | `zh-CN` | 影响文档和提交信息的语言 |
 
@@ -52,7 +54,7 @@
 .aiops/
 ├── governance.yaml          # 治理配置
 ├── hooks/                   # 三个 Python Hook 脚本
-├── projects/<project>/      # 项目知识目录（带 guides 站点模板）
+├── projects/<project>/      # 项目知识目录（含 iteration-bindings.yaml 和 guides）
 ├── diff-records/            # pending.md + archived/
 ├── local/                   # 本地配置
 ├── cache/                   # 缓存
@@ -67,6 +69,7 @@
 
 - 技能已安装到 agent 运行时目录
 - `.aiops/` 结构已创建
-- 项目知识目录和 guides 站点已生成
+- 项目、产品、微服务知识目录和 guides 站点已生成
+- `iteration-bindings.yaml` 已能表达项目迭代、产品版本和微服务主分支
 - Hook 配置已追加到平台文件
 - 所有操作幂等——再执行一次不会产生重复或冲突
