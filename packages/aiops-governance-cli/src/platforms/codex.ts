@@ -2,10 +2,10 @@ import {
   ensureArray,
   ensureObject,
   parseJsonObject,
-  stableIncludesEntry,
   stringifyJsonObject,
   type JsonObject,
 } from "./json-config.js";
+import { aiopsHookCommand } from "./hook-command.js";
 
 const CODEX_HOOKS_PATH = ".codex/hooks.json";
 const AIOPS_MARKER = "aiops-governance";
@@ -19,22 +19,25 @@ export const CODEX_AIOPS_HOOKS: Readonly<Record<string, CodexHookCommand[]>> = {
   UserPromptSubmit: [
     {
       id: "aiops-governance-inject-context",
-      command:
-        "docker run --rm -i -v \"$PWD\":/workspace -w /workspace python:3.13-slim python .aiops/hooks/aiops_inject_context.py",
+      command: aiopsHookCommand("codex", "inject", "UserPromptSubmit"),
     },
   ],
   PostToolUse: [
     {
       id: "aiops-governance-record-diff",
-      command:
-        "docker run --rm -i -v \"$PWD\":/workspace -w /workspace python:3.13-slim python .aiops/hooks/aiops_record_diff.py",
+      command: aiopsHookCommand("codex", "record", "PostToolUse"),
+    },
+  ],
+  SubagentStop: [
+    {
+      id: "aiops-governance-record-subagent",
+      command: aiopsHookCommand("codex", "record", "SubagentStop"),
     },
   ],
   Stop: [
     {
       id: "aiops-governance-trigger-maintenance",
-      command:
-        "docker run --rm -i -v \"$PWD\":/workspace -w /workspace python:3.13-slim python .aiops/hooks/aiops_trigger_maintenance.py",
+      command: aiopsHookCommand("codex", "trigger", "Stop"),
     },
   ],
 };
@@ -54,7 +57,9 @@ export function appendCodexAiopsHooks(existingText = ""): string {
 }
 
 function appendCodexEntry(entries: unknown[], command: CodexHookCommand): void {
-  if (stableIncludesEntry(entries, command.id)) {
+  const existing = findCodexEntry(entries, command.id);
+  if (existing) {
+    existing.command = command.command;
     return;
   }
 
@@ -65,4 +70,19 @@ function appendCodexEntry(entries: unknown[], command: CodexHookCommand): void {
     command: command.command,
   };
   entries.push(entry);
+}
+
+function findCodexEntry(entries: unknown[], id: string): JsonObject | undefined {
+  for (const entry of entries) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      continue;
+    }
+
+    const typedEntry = entry as JsonObject;
+    if (typedEntry.id === id || typedEntry.name === id || JSON.stringify(typedEntry).includes(id)) {
+      return typedEntry;
+    }
+  }
+
+  return undefined;
 }

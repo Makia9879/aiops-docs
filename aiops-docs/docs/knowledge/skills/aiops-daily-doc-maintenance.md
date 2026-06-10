@@ -4,15 +4,15 @@
 
 ## 触发条件
 
-- Hook 自动触发：pending 记录累积到阈值时
+- Hook 自动触发：pending 记录累积到阈值时由 Claude Code 维护
 - 你说"更新一下文档"、"同步知识库"、"检查哪些文档需要改"
 - 定期例行维护（取决于治理等级）
 
 ## 维护输入
 
-维护的起点是 `.aiops/diff-records/pending.md`。这是一份语义变更记录，每条描述"什么变了"和"可能影响什么"。
+维护的起点是文档仓库 `.aiops/diff-records/pending.md`。这是一份 hook 事件摘要队列，每条记录 agent 做了什么、输出了什么、来自哪个源码仓库和分支。
 
-Hook 负责往 pending 里追加记录。Agent 负责读取 pending、理解语义、执行跨文档更新。
+Hook 负责往 pending 里追加记录。Claude Code 维护任务负责读取 pending、回到源码仓库核验证据、理解语义、执行跨文档更新。Claude Code 不可用时，当前 LLM 使用 subagent 执行同一流程。
 
 ## 执行步骤
 
@@ -49,7 +49,7 @@ agent 在维护时必须沿关联链路一路检查：specs ← architecture ←
 
 ### 语义理解优先于文本替换
 
-pending 记录写的是"文件 X 的 login 函数签名改了"，但维护要做的不只是把新签名写到 specs 里。Agent 需要判断：
+pending 记录可能只写着"工具输出提到 login 流程调整"或"apply_patch 触碰了 auth 文件"，但维护要做的不只是把文件名写到 specs 里。Agent 需要判断：
 - 这个改动是局部的还是影响了认证流程的整体设计？
 - 调用 login 的 workflow 描述要不要改？
 - 架构决策里有没有相关的前提被这个改动推翻了？
@@ -58,7 +58,7 @@ pending 记录写的是"文件 X 的 login 函数签名改了"，但维护要做
 
 ### 人类可参与也可不参与
 
-`high` 和 `xhigh` 等级下 agent 自动维护并提交。`low` 和 `medium` 下 agent 提醒但等人确认。
+`high` 下 pending 达阈值后异步维护，`xhigh` 下有 pending 就同步维护。`low` 和 `medium` 下只记录或提醒。
 
 不管哪种模式，自动提交都只包含文档和治理文件，不会把源码改动混进文档提交。
 

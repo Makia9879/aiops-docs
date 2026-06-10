@@ -130,6 +130,13 @@ governance_level: high
 knowledge_language: zh-CN
 projects_root: .aiops/projects
 diff_records: .aiops/diff-records/pending.md
+maintenance_runner:
+  type: claude_code
+  command: claude
+  fallback: prompt_subagent
+  modes:
+    high: async
+    xhigh: sync
 platform_hooks:
   codex:
     status: installed
@@ -194,16 +201,25 @@ Support Codex and Claude Code.
 
 Hook scripts must:
 
-- record semantic change signals to `.aiops/diff-records/pending.md`;
-- remind or trigger `aiops-daily-doc-maintenance` according to governance level;
+- record semantically useful agent events to the docs repository `.aiops/diff-records/pending.md`;
+- trigger Claude Code `aiops-daily-doc-maintenance` according to governance level, or print a subagent fallback prompt when Claude Code is unavailable;
 - never directly rewrite canonical docs.
+
+When source repositories and the AIOps docs repository are separate Git repositories, do not copy the full `.aiops/` tree into source repositories. Use a local source-repo pointer:
+
+```yaml
+# <source-repo>/.aiops-docs.yaml
+docs_repo: /path/to/aiops-docs
+```
+
+`.aiops-docs.yaml` and generated `.aiops-hook-runner.sh` are machine-local source-repo files and should be added to the source repo `.gitignore`.
 
 Platform config rules:
 
 - Create `.codex/hooks.json` when missing.
 - Create `.claude/settings.json` when missing.
 - If config exists, append only AIOps hook entries.
-- If AIOps entries already exist, skip.
+- If AIOps entries already exist, update them to the current managed commands without duplicating entries.
 - If config cannot be parsed safely, stop and ask the human to resolve it.
 
 Hook files are ordinary governed files and should be committed with the workspace. Do not implement complex hook upgrade/hash tracking in the first version.

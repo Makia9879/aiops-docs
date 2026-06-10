@@ -85,12 +85,12 @@ Reading 层的更新方向是单向的：canonical 层变更后同步更新 read
 
 AIOps 的维护机制分两层：
 
-1. **平台 Hook** — Claude Code 和 Codex 的 Hook 在代码变更时自动追加记录到 `.aiops/diff-records/pending.md`。不做判断，只记录。
-2. **Agent 维护** — `aiops-daily-doc-maintenance` 技能定期被触发，读取 pending 记录，理解语义变化，召回受影响的文档，执行跨文档一致性更新。
+1. **平台 Hook** — Claude Code 和 Codex 的 Hook 自动把有语义价值的 agent 事件追加到文档仓库 `.aiops/diff-records/pending.md`。源码仓库可以通过本机 `.aiops-docs.yaml` 指向独立文档仓库。
+2. **Agent 维护** — 达到治理阈值后，Hook 启动 Claude Code 执行 `aiops-daily-doc-maintenance`；Claude Code 不可用时，当前 LLM 使用 subagent 执行同一流程。
 
-Hook 是轻量的、可靠的。它不替代 agent 的判断，只保证"变更不会被漏掉"。真正需要理解语义的步骤留给 agent。
+Hook 是轻量的、可靠的。它不替代 agent 的判断，只保证"变更不会被漏掉"并在合适时机启动维护。真正需要理解语义的步骤留给维护 agent。
 
-这个设计还有一个好处：**人可以参与也可以不参与**。在 `high` 和 `xhigh` 治理等级下，agent 自动维护并提交文档变更；在 `low` 和 `medium` 下，agent 提醒但等人确认。团队根据自己的情况选择。
+这个设计还有一个好处：**人可以参与也可以不参与**。在 `high` 下达到阈值后异步维护，在 `xhigh` 下有 pending 就同步维护；在 `low` 和 `medium` 下只记录或提醒。团队根据自己的情况选择。
 
 ## 设计四：三个场景，同一套知识结构
 

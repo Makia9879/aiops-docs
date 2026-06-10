@@ -6,7 +6,7 @@
 
 ## 维护入口
 
-日常维护的输入是 `.aiops/diff-records/pending.md`。它记录的是语义变更——每条记录描述"什么变了"和"可能影响什么"。
+日常维护的输入是文档仓库里的 `.aiops/diff-records/pending.md`。它记录的是 hook 捕获到的 agent 运行轨迹摘要，例如用户目标、工具输出、final output、subagent summary、源码仓库位置和分支提示。它不是完整源码 diff，也不是要求 coding LLM 主动填写的结束表单。
 
 推荐结构：
 
@@ -18,7 +18,15 @@
 
 `pending.md` 是活动治理输入。`archived/` 保存历史记录，但不纳入后续主动治理范围。
 
-Codex 和 Claude Code 的 hooks 只负责记录、提醒和触发维护，不直接改 canonical docs。真正修改文档的动作仍由 agent 根据 pending 语义、workspace 召回结果和治理等级执行。
+Codex 和 Claude Code 的 hooks 只负责记录、提醒和触发维护，不直接改 canonical docs。达到治理阈值后，hook 会启动 Claude Code 执行维护；如果 Claude Code 不可用，只把 fallback prompt 输出给当前 coding LLM，让当前 LLM 使用 subagent 维护，不把 runner 故障追加进 `pending.md`。
+
+如果代码和文档是两套 Git，源码仓库只需要一个本机指针文件：
+
+```yaml
+docs_repo: /path/to/aiops-docs
+```
+
+这个文件是源码仓库根目录的 `.aiops-docs.yaml`，默认和生成的 `.aiops-hook-runner.sh` 一起加入源码仓库 `.gitignore`。源码仓库不复制完整 `.aiops/`；pending、canonical docs、归档和文档 Git 提交都发生在文档仓库。
 
 ## 语义维护流程
 
@@ -33,7 +41,7 @@ Codex 和 Claude Code 的 hooks 只负责记录、提醒和触发维护，不直
 7. 检查受影响微服务源码当前分支是否等于 `required_branch`。
 8. 用关键词在整个 workspace 召回文件和内容上下文。
 9. 根据召回结果同步修改相关 canonical docs，必要时同步 guides。
-10. 按治理等级决定是否提交 git 变更。
+10. 按治理等级决定是否提交文档 Git 变更。
 
 这个流程的关键点是“跨文档一致性”。例如 interface 文档变化后，如果数据流、调用流程、部署说明或人类阅读指南也受影响，就必须一起更新。否则文档表面被维护了，实际知识库已经分裂。
 
@@ -59,8 +67,8 @@ current branch = git -C <code_root> branch --show-current
 | --- | --- |
 | `low` | 只记录变化，不自动提交。 |
 | `medium` | 记录变化并温和提醒，不自动提交。 |
-| `high` | 默认等级；记录变化、提醒维护，达到阈值后可自动维护并提交文档变更。 |
-| `xhigh` | 更严格；更早触发维护，必要时可阻断继续工作，成功维护后自动提交文档变更。 |
+| `high` | 默认等级；pending 达到阈值后异步启动 Claude Code 维护，成功后可提交文档变更。 |
+| `xhigh` | 更严格；只要存在 pending 就同步启动 Claude Code 维护，成功后默认提交文档变更。 |
 
 自动提交只允许包含文档和治理文件，不应把源码改动混进自动文档提交。提交信息建议使用：
 
@@ -72,15 +80,15 @@ docs(aiops): 更新 <project> 知识库
 
 ## Hooks 的职责边界
 
-hooks 是工具机制，负责记录和提醒。它们适合做三件事：
+hooks 是工具机制，负责记录和触发。它们适合做三件事：
 
 1. 在任务开始时注入相关知识库上下文。
-2. 在任务结束或 git diff 出现时追加 pending 记录。
-3. 在 pending 累积到阈值时提醒或触发 agent 维护。
+2. 在有语义价值的 hook event 出现时追加 pending 记录。
+3. 在 pending 累积到阈值时调用 Claude Code 维护，或在不可用时提示当前 LLM 使用 subagent。
 
-hooks 不应该直接重写 PRD、architecture、specs、adr、workflows。直接改正文需要理解语义、召回上下文、判断影响面，这一步应交给 coding agent 或 subagent。
+hooks 不应该直接重写 PRD、architecture、specs、adr、workflows。直接改正文需要理解语义、召回上下文、判断影响面，这一步应交给 Claude Code 维护任务或当前 LLM 启动的 subagent。
 
-Codex 和 Claude Code 的 hook 配置都应保持追加式、幂等式安装。已有配置存在时，只追加 AIOps 条目；条目已存在时跳过；配置无法解析时停止并让人确认。
+Codex 和 Claude Code 的 hook 配置都应保持幂等安装。已有配置存在时，只追加或更新 AIOps 条目；配置无法解析时停止并让人确认。
 
 ## 人类阅读与 Agent 召回
 

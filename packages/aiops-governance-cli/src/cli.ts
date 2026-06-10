@@ -5,7 +5,8 @@ import { installSkills } from "./install.js";
 import { installToolchain } from "./toolchain/toolchain.js";
 import {
   inferProjectId,
-  initializeWorkspace
+  initializeWorkspace,
+  linkDocsRepository
 } from "./workspace.js";
 import {
   normalizeProjectId,
@@ -43,6 +44,11 @@ async function main(): Promise<void> {
       open: !args.noOpen,
       readOnly: args.readOnly
     });
+    return;
+  }
+
+  if (args.command === "link-docs") {
+    await runLinkDocs(args);
     return;
   }
 
@@ -107,6 +113,20 @@ async function runInit(args: ReturnType<typeof parseArgs>): Promise<void> {
   console.log(`Skipped existing: ${result.skipped.length}`);
 }
 
+async function runLinkDocs(args: ReturnType<typeof parseArgs>): Promise<void> {
+  if (!args.docsRepo) {
+    throw new Error("link-docs requires --docs-repo <path>");
+  }
+
+  const result = await linkDocsRepository(args.cwd, args.docsRepo);
+
+  console.log(`Source workspace: ${result.sourceRoot}`);
+  console.log(`Docs repo: ${result.docsRepo}`);
+  console.log(`Created: ${result.created.length}`);
+  console.log(`Updated: ${result.updated.length}`);
+  console.log(`Skipped existing: ${result.skipped.length}`);
+}
+
 function printHelp(): void {
   console.log(`Usage: aiops-governance <command> [options]
 
@@ -115,6 +135,7 @@ Commands:
   init                 Initialize AIOps governance in the current workspace
   setup                Run install, then init
   config-ui            Start local UI for iteration/product/service bindings
+  link-docs            Link a source repo to an existing AIOps docs repo
 
 Options:
   -y, --yes            Accept defaults and do not prompt
@@ -135,6 +156,7 @@ Options:
   --skills-target <p>  Runtime skills directory; default ~/.agents/skills and ~/.codex/skills
   --with <tools>       Toolchain selection: default, none, or comma list
   --tools-root <p>     Tool install root; default ~/.aiops/tools
+  --docs-repo <p>      link-docs: path to the AIOps docs repo
   -h, --help           Show this help
 `);
 }

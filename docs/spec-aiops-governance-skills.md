@@ -416,28 +416,59 @@ Hooks 一等支持 Codex 和 Claude Code。
 
 Hook 脚本边界：
 
-- 只记录和提醒。
+- 记录有语义价值的 agent 事件，不要求 coding LLM 主动填写记录。
 - 不直接改 canonical docs。
 - 不做大范围知识重写。
 - 不执行 `git checkout` 或其他分支切换。
-- 写入 `.aiops/diff-records/pending.md`。
-- 按治理等级触发或提示 `aiops-daily-doc-maintenance`。
+- 写入文档仓库的 `.aiops/diff-records/pending.md`。
+- 按治理等级调用 Claude Code 执行 `aiops-daily-doc-maintenance`，或在 Claude Code 不可用时提示当前 LLM 使用 subagent 维护。
 - 在注入或提醒中提示 canonical docs 维护必须先读取 `iteration-bindings.yaml`。
 
 Hook 文件：
 
 ```text
+.aiops/hooks/aiops_hook_runner.sh
 .aiops/hooks/aiops_inject_context.py
 .aiops/hooks/aiops_record_diff.py
 .aiops/hooks/aiops_trigger_maintenance.py
 ```
 
+源码仓库不复制完整 `.aiops/`。如果源码仓库需要把 hook 事件投递到独立文档仓库，使用本机文件：
+
+```yaml
+# <source-repo>/.aiops-docs.yaml
+docs_repo: /path/to/aiops-docs
+```
+
+`.aiops-docs.yaml` 和生成的 `.aiops-hook-runner.sh` 是源码仓库本地文件，默认加入源码仓库 `.gitignore`，不提交到源码 Git。
+
+维护 runner 配置放在文档仓库 `.aiops/governance.yaml`：
+
+```yaml
+maintenance_runner:
+  type: claude_code
+  command: claude
+  fallback: prompt_subagent
+  modes:
+    high: async
+    xhigh: sync
+```
+
+治理等级触发规则：
+
+- `low`：只记录，不自动维护。
+- `medium`：只提醒，不自动维护。
+- `high`：pending 达到阈值后异步启动 Claude Code 维护。
+- `xhigh`：只要存在 pending，就同步启动 Claude Code 维护。
+
+维护执行者负责 upsert docs、归档 pending、按治理等级提交文档 Git。hook wrapper 不归档 pending、不提交 Git。Claude Code 不可用时，hook 只把 fallback prompt 输出给当前 coding LLM，不向 `pending.md` 追加 runner 故障记录。
+
 平台配置策略：
 
 - `.codex/hooks.json` 不存在则创建。
 - `.claude/settings.json` 不存在则创建。
-- 存在则只追加 AIOps hook entry。
-- 已有 AIOps hook entry 则跳过。
+- 存在则只追加或更新 AIOps hook entry。
+- 已有 AIOps hook entry 则更新为当前受管命令，不重复追加。
 - 无法安全解析则停止并提示人工处理。
 
 ## 11. Diff Records
@@ -456,28 +487,33 @@ Archive：
 .aiops/diff-records/archived/YYYY-MM-DD.md
 ```
 
-`pending.md` 是语义变更线索，不是精确 edit list。记录应尽量包含 project iteration、product、service、product version、service required branch；如果当时无法确定，应写明 unknown 并让维护流程补齐或询问。
+`pending.md` 是 hook 记录的 agent 运行轨迹摘要队列，不是完整源码 diff，也不是 coding LLM 的强制结束表单。记录应尽量包含 source agent、hook event、source repo、source branch、source head、touched paths、工具输入/输出摘要、final output 或 subagent summary。project iteration、product、service、product version、service required branch 可以由维护流程从 `iteration-bindings.yaml` 和源码证据中补齐。
 
 示例：
 
 ```md
-# Pending AIOps Diff Records
+## Hook Events
 
-## certificate-system
-
-### 2026-06-09 15:30 - CA protocol change candidate
+### 2026-06-10 16:40 - codex PostToolUse
 
 Status: pending
-Source: hook:PostToolUse
-Project iteration: develop_1.0.0
-Product: ca
-Service: ca-admin
+Source agent: codex
+Hook event: PostToolUse
+Source repo: /Users/makia98/lij/work/CA/ca_admin
+Source branch: develop_1.0.0
+Source HEAD: abc1234 adjust certificate issuing flow
+Tool: apply_patch
 
-Changed files:
-- proto/ca/certificate.proto
+Touched paths:
+- internal/logic/uploadusercsr.go
 
-Semantic direction:
-- CA certificate issuance API may have changed.
+Event summary:
+Tool output:
+  updated certificate issuing flow and KMC interaction call path
+
+Maintenance direction:
+- Treat this as an asynchronous coding-agent trace, not as a complete source diff.
+- Maintenance executor should inspect referenced source repos directly before changing canonical docs.
 ```
 
 归档规则：
@@ -671,7 +707,7 @@ guides/docs/services/
 - LLM 能在修改 canonical docs 前输出项目迭代绑定关系。
 - 本地源码分支与微服务主分支不一致时默认提醒，不静默按本地分支改写 canonical docs。
 - Guides 站点仍能从项目级入口阅读项目、产品和微服务文档。
-- `.codex/hooks.json` 和 `.claude/settings.json` 只追加 AIOps hook entry，重复运行不重复追加。
+- `.codex/hooks.json` 和 `.claude/settings.json` 只追加或更新 AIOps hook entry，重复运行不重复追加。
 - `.aiops/diff-records/pending.md` 使用 Markdown。
 - `aiops-daily-doc-maintenance` 按 pending 语义做 workspace-wide 召回。
 - guides VuePress 站点可以通过 Docker Compose 启动。

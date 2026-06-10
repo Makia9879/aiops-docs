@@ -7,6 +7,13 @@ governance_level: ${answers.governanceLevel}
 knowledge_language: ${yamlString(answers.knowledgeLanguage)}
 projects_root: .aiops/projects
 diff_records: .aiops/diff-records/pending.md
+maintenance_runner:
+  type: claude_code
+  command: claude
+  fallback: prompt_subagent
+  modes:
+    high: async
+    xhigh: sync
 projects:
   - ${yamlString(answers.projectId)}
 platform_hooks:

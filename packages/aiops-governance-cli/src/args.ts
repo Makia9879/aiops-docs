@@ -1,5 +1,5 @@
 export interface ParsedArgs {
-  command: "install" | "init" | "setup" | "config-ui" | "help";
+  command: "install" | "init" | "setup" | "config-ui" | "link-docs" | "help";
   yes: boolean;
   project?: string;
   products?: string;
@@ -14,6 +14,7 @@ export interface ParsedArgs {
   skillsTarget?: string;
   withTools?: string;
   toolsRoot?: string;
+  docsRepo?: string;
   host?: string;
   port?: number;
   noOpen: boolean;
@@ -208,6 +209,16 @@ export function parseArgs(argv: string[]): ParsedArgs {
       continue;
     }
 
+    if (arg === "--docs-repo") {
+      parsed.docsRepo = readOptionValue(arg, args);
+      continue;
+    }
+
+    if (arg.startsWith("--docs-repo=")) {
+      parsed.docsRepo = arg.slice("--docs-repo=".length);
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -219,7 +230,13 @@ function parseCommand(value: string | undefined): ParsedArgs["command"] {
     return "help";
   }
 
-  if (value === "install" || value === "init" || value === "setup" || value === "config-ui") {
+  if (
+    value === "install" ||
+    value === "init" ||
+    value === "setup" ||
+    value === "config-ui" ||
+    value === "link-docs"
+  ) {
     return value;
   }
 

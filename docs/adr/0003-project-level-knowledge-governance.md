@@ -77,16 +77,16 @@ Separate the canonical knowledge layer from the human reading layer. Canonical d
 
 Do not require per-document structured metadata or frontmatter. Canonical documents should remain Markdown-first knowledge artifacts. Maintenance recall is driven by the semantic content of pending diff records, iteration binding context, and workspace-wide search, not by mandatory structured fields on every document.
 
-Use hooks as detection and governance mechanisms, not silent document writers. Codex and Claude Code hooks should call shared `.aiops/hooks/` scripts that:
+Use hooks as detection and governance mechanisms, not silent document writers. Codex and Claude Code hooks should call shared `.aiops/hooks/` scripts from the AIOps docs repository. Source repositories may install a local `.aiops-docs.yaml` pointer and local hook helper so source-repo hook events are delivered to the separate docs repository instead of creating an independent `.aiops/` tree. The hook scripts:
 
-- create diff records from code, config, task, and documentation changes;
+- create pending records from semantically useful agent events, such as user prompts, tool results, final outputs, and subagent summaries;
 - inject pending maintenance context into agent turns;
 - summarize likely affected project, product, and service documents;
 - remind the agent that canonical edits require iteration binding preflight;
 - ask the human whether to update documents when below threshold;
-- trigger automatic maintenance when pending maintenance debt exceeds governance-level thresholds.
+- trigger Claude Code maintenance when pending maintenance debt exceeds governance-level thresholds.
 
-Use Markdown diff records as the queue between hooks and knowledge maintenance. `.aiops/diff-records/pending.md` is the active maintenance input. When records are handled, move the handled sections to `.aiops/diff-records/archived/YYYY-MM-DD.md` with the maintenance result. Archived records are historical logs and are not part of active governance recall or maintenance-debt calculation.
+Use Markdown diff records as the queue between hooks and knowledge maintenance. `.aiops/diff-records/pending.md` is the active maintenance input in the docs repository. It stores asynchronous agent trace summaries, source repository locations, source branch/head hints, touched paths, and hook output excerpts. It is not a full source diff and hooks must not try to infer complete documentation semantics. When records are handled, the maintenance executor moves handled sections to `.aiops/diff-records/archived/YYYY-MM-DD.md` with the maintenance result. Archived records are historical logs and are not part of active governance recall or maintenance-debt calculation.
 
 Treat `pending.md` as semantic change input rather than an exact edit list. During maintenance, the agent or subagent should:
 
@@ -109,7 +109,7 @@ Use `governance_level` presets to reduce configuration burden:
 
 Allow a global project `governance_level` with optional product or service overrides when a project needs stricter local rules. The default should remain project-level unless a human explicitly sets an override.
 
-Let `governance_level` also decide whether documentation maintenance commits are automatic. `low` and `medium` should not auto-commit by default. `high` may auto-commit documentation-only maintenance changes after automatic maintenance succeeds. `xhigh` should auto-commit successful documentation maintenance unless the workspace has unhandled non-document changes or an explicit user instruction prevents it.
+Let `governance_level` also decide whether documentation maintenance runs and commits are automatic. `low` records only. `medium` reminds only. `high` starts Claude Code maintenance asynchronously after the pending threshold is reached and may auto-commit documentation-only maintenance changes after automatic maintenance succeeds. `xhigh` starts Claude Code maintenance synchronously whenever pending records exist and should auto-commit successful documentation maintenance unless branch preflight, unclear ownership, or an explicit user instruction prevents it. If Claude Code is unavailable, hooks should only print a fallback prompt telling the current coding LLM to use a subagent for `aiops-daily-doc-maintenance`; they should not append runner-failure noise to `pending.md`.
 
 Use standardized commit messages for automatic AIOps documentation commits. The commit type should be `docs(aiops)`, the subject should follow the configured knowledge language, and the project name should be included. Automatic commits must not mix source-code changes with documentation governance changes unless the human explicitly asks for that.
 

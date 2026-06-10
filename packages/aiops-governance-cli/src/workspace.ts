@@ -37,6 +37,14 @@ export interface InitResult {
   skipped: string[];
 }
 
+export interface LinkDocsResult {
+  sourceRoot: string;
+  docsRepo: string;
+  created: string[];
+  updated: string[];
+  skipped: string[];
+}
+
 export async function discoverWorkspaceRoot(startDir: string): Promise<string> {
   let current = path.resolve(startDir);
 
@@ -69,6 +77,109 @@ export async function inferProjectId(startDir: string): Promise<string> {
   }
 
   return path.basename(path.resolve(startDir));
+}
+
+export async function linkDocsRepository(
+  sourceDir: string,
+  docsRepo: string
+): Promise<LinkDocsResult> {
+  const sourceRoot = path.resolve(sourceDir);
+  const resolvedDocsRepo = path.resolve(sourceRoot, docsRepo);
+  const created: string[] = [];
+  const updated: string[] = [];
+  const skipped: string[] = [];
+
+  if (!(await exists(path.join(resolvedDocsRepo, ".aiops")))) {
+    throw new Error(`Docs repo does not contain .aiops: ${resolvedDocsRepo}`);
+  }
+
+  await ensureLocalDocsLink(sourceRoot, docsRepo, created, updated, skipped);
+  await ensureSourceHookRunner(sourceRoot, created, updated, skipped);
+  await ensureGitignoreEntry(sourceRoot, ".aiops-docs.yaml", created, updated, skipped);
+  await ensureGitignoreEntry(sourceRoot, ".aiops-hook-runner.sh", created, updated, skipped);
+  await ensurePlatformHookConfigs(sourceRoot, created, updated, skipped);
+
+  return {
+    sourceRoot,
+    docsRepo: resolvedDocsRepo,
+    created,
+    updated,
+    skipped
+  };
+}
+
+async function ensureSourceHookRunner(
+  sourceRoot: string,
+  created: string[],
+  updated: string[],
+  skipped: string[]
+): Promise<void> {
+  const target = path.join(sourceRoot, ".aiops-hook-runner.sh");
+  const content = `#!/usr/bin/env sh
+set -eu
+link_file="\${PWD:-.}/.aiops-docs.yaml"
+if [ ! -f "$link_file" ]; then
+  echo "AIOps: missing .aiops-docs.yaml; run aiops link-docs."
+  exit 0
+fi
+docs_repo=$(sed -n "s/^[[:space:]]*docs_repo:[[:space:]]*//p" "$link_file" | head -n 1)
+docs_repo=\${docs_repo#\\"}
+docs_repo=\${docs_repo%\\"}
+docs_repo=\${docs_repo#\\'}
+docs_repo=\${docs_repo%\\'}
+case "$docs_repo" in
+  /*) ;;
+  "") echo "AIOps: empty docs_repo in .aiops-docs.yaml."; exit 0 ;;
+  *) docs_repo="\${PWD:-.}/$docs_repo" ;;
+esac
+runner="$docs_repo/.aiops/hooks/aiops_hook_runner.sh"
+if [ ! -x "$runner" ]; then
+  echo "AIOps: missing $runner; rerun aiops init in the docs repo."
+  exit 0
+fi
+exec "$runner" "$@"
+`;
+
+  if (!(await exists(target))) {
+    await writeFile(target, content, { encoding: "utf8", mode: 0o755 });
+    created.push(target);
+    return;
+  }
+
+  const before = await readFile(target, "utf8");
+  if (before === content) {
+    skipped.push(target);
+    return;
+  }
+
+  await writeFile(target, content, { encoding: "utf8", mode: 0o755 });
+  updated.push(target);
+}
+
+async function ensureLocalDocsLink(
+  sourceRoot: string,
+  docsRepo: string,
+  created: string[],
+  updated: string[],
+  skipped: string[]
+): Promise<void> {
+  const target = path.join(sourceRoot, ".aiops-docs.yaml");
+  const next = `docs_repo: ${docsRepo}\n`;
+
+  if (!(await exists(target))) {
+    await writeFile(target, next, "utf8");
+    created.push(target);
+    return;
+  }
+
+  const before = await readFile(target, "utf8");
+  if (before === next) {
+    skipped.push(target);
+    return;
+  }
+
+  await writeFile(target, next, "utf8");
+  updated.push(target);
 }
 
 export async function initializeWorkspace(
@@ -104,10 +215,11 @@ export async function initializeWorkspace(
 
   await ensureDir(path.join(aiopsRoot, "hooks"), created, skipped);
   for (const template of listWorkspaceHookTemplates()) {
-    await ensureFile(
+    await ensureManagedHookFile(
       path.join(workspaceRoot, template.relativePath),
       template.content,
       created,
+      updated,
       skipped
     );
   }
@@ -317,6 +429,30 @@ async function ensureFile(
   created.push(target);
 }
 
+async function ensureManagedHookFile(
+  target: string,
+  content: string,
+  created: string[],
+  updated: string[],
+  skipped: string[]
+): Promise<void> {
+  if (!(await exists(target))) {
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, content, { encoding: "utf8", mode: 0o755 });
+    created.push(target);
+    return;
+  }
+
+  const before = await readFile(target, "utf8");
+  if (before === content) {
+    skipped.push(target);
+    return;
+  }
+
+  await writeFile(target, content, { encoding: "utf8", mode: 0o755 });
+  updated.push(target);
+}
+
 async function ensurePlatformHookConfigs(
   workspaceRoot: string,
   created: string[],
@@ -389,6 +525,33 @@ async function ensureGitignore(
 
   const separator = before.endsWith("\n") ? "" : "\n";
   await writeFile(target, `${before}${separator}${missing.join("\n")}\n`, "utf8");
+  updated.push(target);
+}
+
+async function ensureGitignoreEntry(
+  workspaceRoot: string,
+  entry: string,
+  created: string[],
+  updated: string[],
+  skipped: string[]
+): Promise<void> {
+  const target = path.join(workspaceRoot, ".gitignore");
+
+  if (!(await exists(target))) {
+    await writeFile(target, `${entry}\n`, "utf8");
+    created.push(target);
+    return;
+  }
+
+  const current = await readFile(target, "utf8");
+  const lines = current.split(/\r?\n/).map((line) => line.trim());
+  if (lines.includes(entry)) {
+    skipped.push(target);
+    return;
+  }
+
+  const suffix = current.endsWith("\n") || current.length === 0 ? "" : "\n";
+  await writeFile(target, `${current}${suffix}${entry}\n`, "utf8");
   updated.push(target);
 }
 

@@ -12,15 +12,15 @@ AIOps 用四个等级来控制自动化程度：
 |------|---------|---------|------------|---------|
 | `low` | ✓ | 不提醒 | 不自动 | 不阻断 |
 | `medium` | ✓ | 温和提醒 | 不自动 | 不阻断 |
-| `high`（默认） | ✓ | 主动提醒 | 达到阈值后自动 | 不阻断 |
-| `xhigh` | ✓ | 主动提醒 | 自动 | 必要时阻断 |
+| `high`（默认） | ✓ | 主动提醒 | 达到阈值后异步自动 | 不阻断 |
+| `xhigh` | ✓ | 主动提醒 | 有 pending 时同步自动 | 必要时阻断 |
 
 ### 怎么选
 
 - **low**：适合快速原型阶段，或者文档暂不是当前优先级的项目。Hook 仍然在记录变更，只是不催促不自动处理——相当于把记录攒着，后面可以一起处理。
 - **medium**：适合小团队、文档变更不频繁的项目。agent 会提醒"这些变更可能影响某几篇文档"，但提交权在人手里。
-- **high**：默认推荐。agent 在 pending 累积到一定阈值后，自动执行维护并提交。提交范围限定为文档和治理文件，不会把源码改动一起交。
-- **xhigh**：适合对文档一致性要求极高的项目。pending 记录积累更快，维护触发更早，在文档未更新时可以阻止继续开发。
+- **high**：默认推荐。pending 累积到阈值后，hook 异步启动 Claude Code 维护并在安全时提交文档 Git。提交范围限定为文档和治理文件，不会把源码改动一起交。
+- **xhigh**：适合对文档一致性要求极高的项目。只要存在 pending，hook 就同步启动 Claude Code 维护；失败时把问题输出给当前 agent。
 
 实际使用中，大多数项目用 `high` 就够了。`low` 和 `xhigh` 是两个极端，分别适合"先不管"和"必须管"的场景。
 
@@ -36,7 +36,7 @@ AIOps 用四个等级来控制自动化程度：
 
 ## Hook 机制
 
-Hook 是连接代码活动和知识维护的桥梁。目前在 Claude Code 和 Codex 两个平台上实现了。
+Hook 是连接代码活动和知识维护的桥梁。目前在 Claude Code 和 Codex 两个平台上实现了。源码仓库和文档仓库可以是两套 Git；源码仓库通过本机 `.aiops-docs.yaml` 指向文档仓库，把 hook event 投递到文档仓库的 pending 队列。
 
 ### Hook 做什么
 
@@ -45,14 +45,16 @@ Hook 是连接代码活动和知识维护的桥梁。目前在 Claude Code 和 C
 | Hook | 触发时机 | 做什么 |
 |------|---------|--------|
 | `aiops_inject_context` | 任务开始时 | 注入项目知识库上下文给 agent |
-| `aiops_record_diff` | 代码变更后 | 在 `pending.md` 追加变更记录 |
-| `aiops_trigger_maintenance` | 会话结束时 | 检查 pending 阈值，决定是否提醒或触发维护 |
+| `aiops_record_diff` | 有语义价值的工具或 subagent 事件后 | 在文档仓库 `pending.md` 追加 agent 运行轨迹摘要 |
+| `aiops_trigger_maintenance` | 会话结束时 | 检查 pending 阈值，决定是否调用 Claude Code 维护 |
 
 ### Hook 不做什么
 
 这个边界很重要：**Hook 不改文档**。它不打开 canonical 文档往里写内容，不修改 PRD，不更新架构图。
 
-原因是 Hook 运行在受限的时机和上下文里——它能看到"文件 X 改了"，但看不到"这个改动意味着认证流程从 JWT 迁移到了 OAuth"。理解语义、找到所有受影响的文档、判断怎么更新——这些需要 agent 在完整的技能流程里做。
+原因是 Hook 运行在受限的时机和上下文里。它记录的是 agent 事件摘要和定位线索，不是完整源码 diff。理解语义、找到所有受影响的文档、判断怎么更新，这些由 Claude Code 维护任务或当前 LLM 的 subagent 在完整技能流程里做。
+
+如果 Claude Code runner 不可用，hook 只把 fallback prompt 输出给当前 coding LLM，要求它使用 subagent 执行 `aiops-daily-doc-maintenance`；runner 故障不会写入 `pending.md`。
 
 ### 安装方式
 
@@ -61,7 +63,7 @@ Hook 配置通过 CLI 的 `init` 命令写入平台配置文件：
 - Claude Code: `.claude/settings.json`
 - Codex: `.codex/hooks.json`
 
-写入是**追加式**的。已有配置存在时，只追加 AIOps 条目，不覆盖已有内容。条目已存在时跳过。配置无法解析时报错让人处理。
+写入是幂等的。已有配置存在时，只追加或更新 AIOps 条目，不覆盖其他内容。配置无法解析时报错让人处理。源码仓库可用 `link-docs` 写入本机 `.aiops-docs.yaml` 和本地 hook helper；这两个文件默认不提交源码 Git。
 
 ## 三级文档结构
 

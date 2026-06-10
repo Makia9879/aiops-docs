@@ -106,11 +106,11 @@ docker compose up
 初始化只做一次。日常使用中，知识维护是自动的：
 
 1. 你正常写代码，AI agent 辅助开发
-2. 代码变更时，Hook 自动记录到 `.aiops/diff-records/pending.md`
-3. Agent 定期（或被提醒时）执行 `aiops-daily-doc-maintenance`，先读取 `iteration-bindings.yaml`，再根据 pending 记录更新相关文档
+2. Hook 自动把有语义价值的 agent 事件记录到文档仓库 `.aiops/diff-records/pending.md`
+3. 达到治理阈值后，Claude Code 执行 `aiops-daily-doc-maintenance`，先读取 `iteration-bindings.yaml`，再根据 pending 记录更新相关文档
 4. 你也可以随时对 agent 说：**"检查一下知识库是否需要更新"**
 
-治理等级决定了自动化程度。默认是 `high`——agent 在 pending 积累到一定量后自动维护并提交。详见[治理模型](./governance-model.md)。
+治理等级决定了自动化程度。默认是 `high`——pending 积累到一定量后异步维护并在安全时提交。详见[治理模型](./governance-model.md)。
 
 ## 常用操作速查
 

@@ -22,7 +22,7 @@ description: Maintains existing AIOps structured knowledge documents from code d
 
    Until the human confirms, only record the mismatch in `.aiops/diff-records/pending.md` or the relevant `open-questions.md`.
 8. Read `.aiops/diff-records/pending.md`.
-9. Summarize the pending records semantically and extract keywords. Do not treat pending records as exact edit instructions.
+9. Summarize the pending records semantically and extract keywords. Treat pending records as asynchronous coding-agent trace summaries, not as exact edit instructions or complete source diffs.
 10. Use the keywords to recall files and content across the whole workspace:
    - canonical docs under `.aiops/projects/<project>/`;
    - source code, tests, configs, manifests, migrations, and existing docs;
@@ -39,7 +39,7 @@ description: Maintains existing AIOps structured knowledge documents from code d
    - Human-facing explanation affected -> `guides/docs/`.
    - Unresolved or weak evidence -> `open-questions.md`.
 12. Update related files and surrounding context consistently. For example, if an interface changes, check specs, workflows, architecture, and guides instead of editing only one file.
-13. Archive handled pending sections into `.aiops/diff-records/archived/YYYY-MM-DD.md` and remove them from `pending.md`.
+13. Archive handled pending sections into `.aiops/diff-records/archived/YYYY-MM-DD.md` and remove them from `pending.md`. The maintenance executor that was started by the hook owns this archiving step.
 14. Run the review checklist for changed files.
 15. Commit according to governance level.
 
@@ -52,7 +52,9 @@ description: Maintains existing AIOps structured knowledge documents from code d
 - Add validation commands when a change creates a new maintenance path.
 - Always maintain docs against the selected project iteration binding. Local temporary source branches do not create new document versions.
 - Record the project iteration, product version, service `required_branch`, and any human branch-mismatch confirmation in the maintenance summary, diff record, or commit context.
-- Hooks record, remind, and trigger maintenance; hooks must not directly rewrite canonical docs.
+- Hooks record semantically useful agent events and trigger Claude Code maintenance; hooks must not directly rewrite canonical docs or archive pending records themselves.
+- If source and docs are separate Git repositories, only commit the docs repository. Source repository dirty state is evidence for maintenance, not a blocker for docs-only commits.
+- If Claude Code is unavailable, the current coding LLM should use a subagent to run this workflow from the docs repository. The fallback prompt itself should not be appended to `pending.md`.
 - Do not update docs by path alone. Always use the semantic meaning of `pending.md` to recall related context across the workspace.
 - Do not use `.aiops/diff-records/archived/` as active recall input or maintenance debt.
 - Do not mix source-code changes into automatic documentation commits unless the human explicitly asks.
@@ -62,8 +64,8 @@ description: Maintains existing AIOps structured knowledge documents from code d
 
 - `low`: record only; do not auto-commit.
 - `medium`: record and remind; do not auto-commit.
-- `high`: default. After threshold-driven maintenance succeeds, may auto-commit documentation-only or governance-only changes.
-- `xhigh`: stronger. Trigger earlier, may block session end through hooks, and auto-commit successful documentation-only or governance-only maintenance when safe.
+- `high`: default. After threshold-driven asynchronous Claude Code maintenance succeeds, may auto-commit documentation-only or governance-only changes.
+- `xhigh`: stronger. When pending records exist, hooks may synchronously start Claude Code maintenance and auto-commit successful documentation-only or governance-only maintenance when safe.
 
 Automatic commit message:
 

@@ -29,6 +29,7 @@ export async function installAiopsHooks(
       path.join(workspaceRoot, template.relativePath),
       template.content,
       created,
+      updated,
       skipped
     );
   }
@@ -85,16 +86,24 @@ async function ensureFile(
   target: string,
   content: string,
   created: string[],
+  updated: string[],
   skipped: string[]
 ): Promise<void> {
-  if (await exists(target)) {
+  if (!(await exists(target))) {
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, content, { encoding: "utf8", mode: 0o755 });
+    created.push(target);
+    return;
+  }
+
+  const before = await readFile(target, "utf8");
+  if (before === content) {
     skipped.push(target);
     return;
   }
 
-  await mkdir(path.dirname(target), { recursive: true });
   await writeFile(target, content, { encoding: "utf8", mode: 0o755 });
-  created.push(target);
+  updated.push(target);
 }
 
 async function exists(target: string): Promise<boolean> {
