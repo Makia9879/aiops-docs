@@ -6,7 +6,7 @@
 
 ## 维护入口
 
-日常维护的输入是文档仓库里的 `.aiops/diff-records/pending.md`。它记录的是 hook 捕获到的 agent 运行轨迹摘要，例如用户目标、工具输出、final output、subagent summary、源码仓库位置和分支提示。它不是完整源码 diff，也不是要求 coding LLM 主动填写的结束表单。
+日常维护的输入是文档仓库里的 `.aiops/diff-records/pending.md`。它记录的是 hook 捕获到的 agent 运行轨迹摘要，例如用户目标、工具输出、final output、subagent summary、源码仓库位置和分支提示。它是语义摘要而非完整源码 diff，不要求 coding LLM 主动填写结束表单。
 
 推荐结构：
 

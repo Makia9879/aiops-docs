@@ -6,8 +6,9 @@
 
 ```
 aiops-docs/
-├── skills/                              # AIOps 治理技能（6 个）
+├── skills/                              # AIOps 治理技能（7 个）
 │   ├── aiops-daily-doc-maintenance/
+│   ├── aiops-dev-context-recall/
 │   ├── aiops-governance-bootstrap/
 │   ├── aiops-historical-project-intake/
 │   ├── aiops-knowledge-lifecycle/
@@ -101,15 +102,17 @@ NPM_TOKEN=<token> DRY_RUN=false scripts/publish-aiops-npm.sh
 ### 命令流程
 
 ```
-aiops-governance
+aiops
 ├── install
-│   ├── installSkills()       # 复制 6 个技能到 ~/.agents/skills, ~/.codex/skills
+│   ├── installSkills()       # 复制 7 个技能到 ~/.agents/skills, ~/.codex/skills
 │   └── installToolchain()    # 安装辅助 npm 工具包到 ~/.aiops/tools
 ├── init
 │   ├── discoverWorkspaceRoot()   # 发现或确认 .aiops/ 根目录
 │   ├── inferProjectId()          # 从 package.json 或目录名推断项目 ID
 │   ├── promptForAnswers()        # TUI 交互问答（--yes 跳过）
 │   └── initializeWorkspace()     # 幂等生成目录、模板文件、Hook、平台配置
+├── config-ui                   # 启动本地页面配置迭代绑定
+├── link-docs                   # 源码仓库链接到独立文档仓库
 └── setup = install + init
 ```
 

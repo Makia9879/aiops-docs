@@ -89,9 +89,14 @@
 
 `install` 不应偷偷改项目文件。`init` 和 `setup` 可以改 workspace，但必须是幂等动作。
 
-发布后推荐通过 `npx` 原生安装和初始化：
+发布后推荐通过独立 CLI 或 `npx` 原生安装和初始化：
 
 ```bash
+# 全局安装 CLI
+npm install -g @makia9879/aiops
+aiops setup --yes --project cert-auth --products CA,RA,KMC,OCSP
+
+# 或通过 npx 直接运行
 npx -y @makia9879/aiops setup --yes --project cert-auth --products CA,RA,KMC,OCSP
 ```
 

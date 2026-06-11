@@ -17,11 +17,11 @@ export default defineUserConfig({
     sidebar: {
       "/knowledge/": [
         {
-          text: "概念",
+          text: "开篇",
           children: [
-            { text: "1. 知识库入口", link: "/knowledge/" },
-            { text: "2. 核心理念", link: "/knowledge/overview.md" },
-            { text: "3. 快速上手", link: "/knowledge/quick-start.md" }
+            { text: "1. 项目概述", link: "/knowledge/" },
+            { text: "2. 快速上手", link: "/knowledge/quick-start.md" },
+            { text: "3. 核心理念", link: "/knowledge/overview.md" }
           ]
         },
         {

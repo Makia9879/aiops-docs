@@ -173,7 +173,7 @@ async function runLinkDocs(args: ReturnType<typeof parseArgs>): Promise<void> {
 }
 
 function printHelp(): void {
-  console.log(`Usage: aiops-governance <command> [options]
+  console.log(`Usage: aiops <command> [options]
 
 Commands:
   install              Install AIOps skills to agent runtime directories
@@ -208,6 +208,6 @@ Options:
 
 main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
-  console.error(`aiops-governance: ${message}`);
+  console.error(`aiops: ${message}`);
   process.exitCode = 1;
 });

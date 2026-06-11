@@ -2,13 +2,13 @@
 home: true
 title: AIOps Docs
 heroText: AIOps 知识治理
-tagline: 让 AI coding agent 真正理解你的项目
+tagline: 让 AI coding agent 真正理解项目
 actions:
-  - text: 了解核心理念
-    link: /knowledge/overview.html
-    type: primary
-  - text: 查看知识库
+  - text: 项目概述
     link: /knowledge/
+    type: primary
+  - text: 快速上手
+    link: /knowledge/quick-start.html
     type: secondary
 features:
   - title: 历史项目入库
@@ -21,25 +21,36 @@ features:
     details: 新项目从第一天就建立知识治理骨架，PRD、架构、决策记录各有落点，不给后面的维护留坑。
 ---
 
-## 这个仓库解决什么问题
+## 这个项目解决什么问题
 
-越来越多的团队开始在日常开发中使用 Claude Code、Codex 等 AI coding agent。但一个反复出现的问题是：**agent 对你的项目缺乏了解**。
+越来越多的团队开始在日常开发中使用 Claude Code、Codex 等 AI coding agent。但一个反复出现的问题是：**agent 对项目缺乏了解**。
 
-它不知道模块之间的依赖关系，不知道某个接口为什么这样设计，不知道三周前的架构决策是什么。每次让它干活，你都要从头解释上下文。
+模块之间的依赖关系、某个接口的设计原因、三周前的架构决策——agent 拿不到这些上下文。每次任务都需要从头解释。
 
-传统的做法是写文档。但问题是：
+传统的做法是写文档。但存在几个问题：
 
 - 人写的文档 agent 读了也不一定理解——结构随意、关键信息埋在大段描述里
 - 文档写完之后很少更新，很快就和代码脱节
 - 没有机制让文档的变更和代码变更联动
 
-**AIOps 知识治理做的事很简单：在你的项目里建立一套 agent 能真正使用和维护的知识结构。** 它不是一个文档模板库，而是一个从初始化、生成、维护到审查的完整工作机制。
+**AIOps 知识治理做的事：在项目里建立一套 agent 能真正使用和维护的知识结构。** 它是一个从初始化、生成、维护到审查的完整工作机制。
+
+## 四个场景 · 三个工具 · 七个技能 · 三个 Hook
+
+AIOps 知识治理围绕 **4 个场景** 组织，由 **7 个技能** 执行，通过 **3 个 Hook** 连接代码活动，辅以 **3 个工具** 增强代码理解能力。
+
+| | 包含 | 说明 |
+|---|---|---|
+| **场景** | 历史入库、召回研发、日常维护、新项目初始化 | 共享同一套 `.aiops/` 知识结构 |
+| **工具** | CodeGraph、Understand Anything、Trellis | CLI 自动检查并补齐 |
+| **技能** | lifecycle（总调度）+ 6 个子技能 | 按场景路由，无需手动选择 |
+| **Hook** | inject_context、record_diff、trigger_maintenance | 只记录和触发，不改文档 |
 
 ## 怎么做到
 
-### 1. 项目级治理，不是文章级
+### 1. 项目级治理
 
-不以单篇文档为管理单位，以整个项目为治理对象。一个项目包含 PRD、架构、规格、决策记录、工作流五类知识，以及多个子产品域。它们之间的关联和一致性才是治理的核心。
+以整个项目为治理单位，不以单篇文档为管理对象。一个项目包含 PRD、架构、规格、决策记录、工作流五类知识，以及多个子产品域。跨文档的关联和一致性是治理的核心。
 
 ### 2. 两层文档模型
 
@@ -48,23 +59,29 @@ features:
 
 ### 3. Hook 驱动的持续维护
 
-不是"想起来的时候改一下文档"。代码变更通过 Hook 自动记录到 pending 记录中，agent 根据 pending 的语义判断影响面，更新所有相关文档。
-
-## 四个核心场景
-
-点击上方"了解核心理念"开始阅读，或者直接跳转到你关心的场景：
-
-- [历史项目入库](./knowledge/historical-project-documentation.md) — 已有的老项目，代码和文档都有，怎么整理
-- [文档召回辅助研发](./knowledge/development-context-recall.md) — 开发、调试、评审前怎么让 agent 先用项目知识
-- [日常文档维护](./knowledge/document-maintenance.md) — 项目在持续开发，怎么让文档跟着走
-- [新项目初始化](./knowledge/new-project-initialization.md) — 新启动的项目，从一开始就建好结构
+代码变更通过 Hook 自动记录到 pending 记录中，agent 根据 pending 的语义判断影响面，更新所有相关文档。维护是自动触发的系统行为，不依赖人工记得。
 
 ## 怎么开始
 
-在你的项目根目录执行：
+```bash
+# 全局安装 CLI
+npm install -g @makia9879/aiops
+
+# 在项目根目录初始化
+aiops setup --yes --project my-project
+```
+
+这一行命令会安装全部 7 个治理技能和 3 个辅助工具，并在项目下创建 `.aiops/` 知识治理目录。之后 AI agent 就具备了知识治理能力。
+
+也可以不全局安装，直接通过 npx 运行：
 
 ```bash
 npx -y @makia9879/aiops setup --yes --project my-project
 ```
 
-这一行命令会安装全部治理技能，并在项目下创建 `.aiops/` 知识治理目录。之后你的 AI agent 就具备了知识治理能力，可以开始梳理和维护项目知识。
+## 了解更多
+
+- [项目概述](./knowledge/) — 四个场景、三个工具、七个技能、三个 Hook 的完整介绍
+- [快速上手](./knowledge/quick-start.html) — 从零开始，按场景使用
+- [核心理念](./knowledge/overview.html) — 设计思路和解决的问题
+- [治理模型](./knowledge/governance-model.html) — 治理等级、Hook 机制、工具链协同

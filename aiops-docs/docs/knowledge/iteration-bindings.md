@@ -6,7 +6,7 @@
 项目迭代 -> 产品版本 -> 微服务主分支
 ```
 
-规则来自 `docs/spec-aiops-branch-bound-document-structure.md`。它解决的问题是：LLM 维护文档前必须知道当前文档属于哪个项目迭代，而不是静默跟随本地临时源码分支。
+规则来自 `docs/spec-aiops-branch-bound-document-structure.md`。它解决的问题是：LLM 维护文档前必须知道当前文档属于哪个项目迭代，不以本地临时源码分支为准。
 
 ## 配置位置
 
@@ -98,4 +98,4 @@ current branch = git -C <code_root> branch --show-current
 - 相关微服务主分支。
 - 如果本地源码分支不一致但人工确认继续，记录确认原因。
 
-这能让后来的人和 agent 知道文档事实基于哪一轮项目迭代，而不是猜测它跟哪个本地分支有关。
+这能让后来的人和 agent 知道文档事实基于哪一轮项目迭代，以明确的项目迭代为准。

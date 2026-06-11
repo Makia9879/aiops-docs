@@ -401,7 +401,7 @@ LLM 处理文档维护任务时按以下顺序执行：
 建议命令：
 
 ```bash
-aiops-governance config-ui --project certificate-system
+aiops config-ui --project certificate-system
 ```
 
 职责：

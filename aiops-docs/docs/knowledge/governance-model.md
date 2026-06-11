@@ -52,7 +52,7 @@ Hook 是连接代码活动和知识维护的桥梁。目前在 Claude Code 和 C
 
 这个边界很重要：**Hook 不改文档**。它不打开 canonical 文档往里写内容，不修改 PRD，不更新架构图。
 
-原因是 Hook 运行在受限的时机和上下文里。它记录的是 agent 事件摘要和定位线索，不是完整源码 diff。理解语义、找到所有受影响的文档、判断怎么更新，这些由 Claude Code 维护任务或当前 LLM 的 subagent 在完整技能流程里做。
+原因是 Hook 运行在受限的时机和上下文里。它记录的是 agent 事件摘要和定位线索（不是完整源码 diff）。理解语义、找到所有受影响的文档、判断怎么更新，这些由 Claude Code 维护任务或当前 LLM 的 subagent 在完整技能流程里做。
 
 如果 Claude Code runner 不可用，hook 只把 fallback prompt 输出给当前 coding LLM，要求它使用 subagent 执行 `aiops-daily-doc-maintenance`；runner 故障不会写入 `pending.md`。
 

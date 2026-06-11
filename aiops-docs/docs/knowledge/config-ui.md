@@ -5,10 +5,10 @@
 建议命令：
 
 ```bash
-aiops-governance config-ui --project certificate-system
+aiops config-ui --project certificate-system
 ```
 
-它的目标不是替代文档维护流程，而是降低编辑 `iteration-bindings.yaml` 的门槛。
+它的目标是降低编辑 `iteration-bindings.yaml` 的门槛，作为文档维护流程的辅助入口。
 
 ## 它会读取什么
 
