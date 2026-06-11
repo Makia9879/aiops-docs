@@ -19,7 +19,8 @@ npx -y @makia9879/aiops setup --yes --project my-project
 这一行命令做了两件事：
 
 1. 把 7 个治理技能安装到 agent 的运行时目录（`~/.agents/skills/` 和 `~/.codex/skills/`）
-2. 在当前目录创建 `.aiops/` 知识治理结构
+2. 检查本地工具链并在 `--yes` 下自动补齐缺失项
+3. 在当前目录创建 `.aiops/` 知识治理结构
 
 完成后你会看到类似这样的输出：
 
@@ -27,6 +28,7 @@ npx -y @makia9879/aiops setup --yes --project my-project
 Skills source: /path/to/skills
 Skills targets: ~/.agents/skills, ~/.codex/skills
 Skills installed: 7
+Toolchain check: 0/3 ready
 Tools installed: 3
 Workspace: /path/to/your-project
 AIOps root: /path/to/your-project/.aiops

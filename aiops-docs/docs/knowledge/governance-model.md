@@ -180,7 +180,7 @@ Agent 修改 canonical docs 前，应先读取 `project.yaml` 和 `iteration-bin
 
 ## 工具链
 
-CLI 在安装技能时，会同时安装三个辅助工具：
+CLI 在安装技能时，会检查并可自动补齐三个辅助工具：
 
 | 工具 | 版本 | 用途 |
 |------|------|------|
@@ -188,7 +188,7 @@ CLI 在安装技能时，会同时安装三个辅助工具：
 | Understand Anything | 2.7.6 | 通用代码理解，从源码提炼项目结构和业务概念 |
 | Trellis | 0.5.19 | 任务执行和上下文注入层（辅助，不作为 canonical source） |
 
-可以跳过工具链安装（`--with none`）或选择性安装（`--with codegraph,trellis`）。
+安装程序会先汇总本地工具链版本和缺失项，交互式终端询问是否自动补齐；带 `--yes` 时自动补齐。可以跳过工具链安装（`--with none`）或选择性安装（`--with codegraph,trellis`）。
 
 ### Trellis 的定位
 

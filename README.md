@@ -100,6 +100,8 @@ npx -y @makia9879/aiops setup --yes --project my-app --level high
 | `--language <lang>` | 文档语言 | `zh-CN` |
 | `--with <tools>` | 辅助工具链：`default` / `none` / 逗号列表 | `default` |
 
+安装命令会先检查本地工具链版本和可执行 shim，汇总已就绪、缺失或版本不符的工具。交互式安装会询问是否自动补齐；带 `--yes` 时自动补齐；`--with none` 跳过工具链检查和安装。
+
 ## 查看文档站点
 
 初始化后，每个项目自带一个可本地预览的开发指南站点：

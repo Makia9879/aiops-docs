@@ -2,7 +2,11 @@
 import { parseArgs } from "./args.js";
 import { runConfigUi } from "./config-ui.js";
 import { installSkills } from "./install.js";
-import { installToolchain } from "./toolchain/toolchain.js";
+import {
+  checkToolchain,
+  installToolchain,
+  type ToolchainCheckResult
+} from "./toolchain/toolchain.js";
 import {
   inferProjectId,
   initializeWorkspace,
@@ -14,7 +18,7 @@ import {
   createBootstrapProducts,
   type BootstrapAnswers
 } from "./questions.js";
-import { promptForAnswers } from "./tui.js";
+import { promptForAnswers, promptForToolchainRepair } from "./tui.js";
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
@@ -61,10 +65,36 @@ async function runInstall(args: ReturnType<typeof parseArgs>): Promise<void> {
     skillsSource: args.skillsSource,
     skillsTarget: args.skillsTarget
   });
-  const toolchainResult = await installToolchain({
+
+  const toolchainCheck = await checkToolchain({
     selection: args.withTools,
     toolsRoot: args.toolsRoot
   });
+  printToolchainCheck(toolchainCheck);
+
+  const shouldInstallToolchain =
+    toolchainCheck.needsInstall.length > 0 &&
+    (args.yes || (await promptForToolchainRepair(toolchainCheck.needsInstall.length)));
+
+  const toolchainResult = shouldInstallToolchain
+    ? await installToolchain({
+        toolNames: toolchainCheck.needsInstall.map((tool) => tool.name),
+        toolsRoot: args.toolsRoot
+      })
+    : {
+        toolsRoot: toolchainCheck.toolsRoot,
+        binRoot: toolchainCheck.binRoot,
+        installed: [],
+        updated: [],
+        skipped: toolchainCheck.skipped.concat(
+          toolchainCheck.needsInstall.length > 0
+            ? ["toolchain: repair skipped by user"]
+            : toolchainCheck.selected.length > 0
+              ? ["toolchain: already complete"]
+              : []
+        ),
+        shims: []
+      };
 
   console.log(`Skills source: ${skillsResult.sourceRoot}`);
   console.log(`Skills targets: ${skillsResult.targets.join(", ")}`);
@@ -78,6 +108,21 @@ async function runInstall(args: ReturnType<typeof parseArgs>): Promise<void> {
   console.log(`Tools skipped: ${toolchainResult.skipped.length}`);
   if (toolchainResult.shims.length > 0) {
     console.log(`Tool shims: ${toolchainResult.shims.join(", ")}`);
+  }
+}
+
+function printToolchainCheck(result: ToolchainCheckResult): void {
+  console.log(`Toolchain check: ${result.ready.length}/${result.tools.length} ready`);
+  if (result.skipped.length > 0) {
+    console.log(`Toolchain skipped: ${result.skipped.join(", ")}`);
+  }
+
+  for (const tool of result.tools) {
+    const installed = tool.installedVersion ?? "missing";
+    const issues = tool.issues.length > 0 ? `; ${tool.issues.join("; ")}` : "";
+    console.log(
+      `- ${tool.name}: ${tool.status}; expected ${tool.packageName}@${tool.expectedVersion}; installed ${installed}${issues}`
+    );
   }
 }
 

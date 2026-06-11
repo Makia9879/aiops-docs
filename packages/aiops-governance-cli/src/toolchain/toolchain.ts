@@ -1,4 +1,5 @@
-import { access, chmod, mkdir, readFile, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import { access, chmod, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -15,6 +16,7 @@ export interface ToolchainTool {
 
 export interface ToolchainInstallOptions {
   selection?: string;
+  toolNames?: ToolName[];
   toolsRoot?: string;
 }
 
@@ -27,16 +29,73 @@ export interface ToolchainInstallResult {
   shims: string[];
 }
 
+export type ToolchainCheckStatus = "ready" | "missing" | "version-mismatch" | "incomplete";
+
+export interface ToolchainCheckOptions {
+  selection?: string;
+  toolsRoot?: string;
+}
+
+export interface ToolchainCheckItem {
+  name: ToolName;
+  packageName: string;
+  expectedVersion: string;
+  installedVersion: string | null;
+  installedToolRoot: string | null;
+  bin: string | null;
+  toolRoot: string;
+  shimPath: string | null;
+  status: ToolchainCheckStatus;
+  issues: string[];
+}
+
+export interface ToolchainCheckResult {
+  toolsRoot: string;
+  binRoot: string;
+  selected: ToolName[];
+  tools: ToolchainCheckItem[];
+  ready: ToolchainCheckItem[];
+  needsInstall: ToolchainCheckItem[];
+  skipped: string[];
+}
+
 export const DEFAULT_TOOL_NAMES = Object.keys(versions) as ToolName[];
+
+export async function checkToolchain(
+  options: ToolchainCheckOptions
+): Promise<ToolchainCheckResult> {
+  const selected = parseToolSelection(options.selection);
+  const { toolsRoot, binRoot } = resolveToolchainRoots(options.toolsRoot);
+  const tools: ToolchainCheckItem[] = [];
+  const skipped: string[] = [];
+
+  for (const tool of selected.map(resolveTool)) {
+    tools.push(await checkTool(tool, toolsRoot, binRoot));
+  }
+
+  if (selected.length === 0) {
+    skipped.push("toolchain: disabled by --with none");
+  }
+
+  const ready = tools.filter((tool) => tool.status === "ready");
+  const needsInstall = tools.filter((tool) => tool.status !== "ready");
+
+  return {
+    toolsRoot,
+    binRoot,
+    selected,
+    tools,
+    ready,
+    needsInstall,
+    skipped
+  };
+}
 
 export async function installToolchain(
   options: ToolchainInstallOptions
 ): Promise<ToolchainInstallResult> {
-  const selected = parseToolSelection(options.selection);
-  const toolsRoot = path.resolve(
-    options.toolsRoot ?? process.env.AIOPS_TOOLS_ROOT ?? path.join(os.homedir(), ".aiops", "tools")
-  );
-  const binRoot = path.join(path.dirname(toolsRoot), "bin");
+  const selected = options.toolNames ?? parseToolSelection(options.selection);
+  const { toolsRoot, binRoot } = resolveToolchainRoots(options.toolsRoot);
   const installed: string[] = [];
   const updated: string[] = [];
   const skipped: string[] = [];
@@ -95,6 +154,19 @@ export async function installToolchain(
   };
 }
 
+function resolveToolchainRoots(toolsRootOption: string | undefined): {
+  toolsRoot: string;
+  binRoot: string;
+} {
+  const toolsRoot = path.resolve(
+    toolsRootOption ?? process.env.AIOPS_TOOLS_ROOT ?? path.join(os.homedir(), ".aiops", "tools")
+  );
+  return {
+    toolsRoot,
+    binRoot: path.join(path.dirname(toolsRoot), "bin")
+  };
+}
+
 export function parseToolSelection(value: string | undefined): ToolName[] {
   if (!value || value.trim() === "default") {
     return DEFAULT_TOOL_NAMES;
@@ -131,6 +203,55 @@ function resolveTool(name: ToolName): ToolchainTool {
     packageName: spec.package,
     version: spec.version,
     bin: spec.bin
+  };
+}
+
+async function checkTool(
+  tool: ToolchainTool,
+  toolsRoot: string,
+  binRoot: string
+): Promise<ToolchainCheckItem> {
+  const toolRoot = path.join(toolsRoot, tool.name, tool.version);
+  const packageJsonPath = getInstalledPackageJsonPath(tool, toolRoot);
+  const expectedInstall = await readInstalledPackageInfo(packageJsonPath, toolRoot);
+  const installed = expectedInstall ?? await findAnyInstalledPackage(tool, toolsRoot);
+  const installedVersion = installed?.version ?? null;
+  const shimPath = tool.bin ? path.join(binRoot, tool.bin) : null;
+  const issues: string[] = [];
+
+  if (!installedVersion) {
+    issues.push(`missing package ${tool.packageName}@${tool.version}`);
+  } else if (installedVersion !== tool.version) {
+    issues.push(`version mismatch: installed ${installedVersion}, expected ${tool.version}`);
+    if (installed?.toolRoot && installed.toolRoot !== toolRoot) {
+      issues.push(`installed root ${installed.toolRoot}`);
+    }
+  }
+
+  if (shimPath && !(await canExecute(shimPath))) {
+    issues.push(`missing executable shim ${shimPath}`);
+  }
+
+  let status: ToolchainCheckStatus = "ready";
+  if (!installedVersion) {
+    status = "missing";
+  } else if (installedVersion !== tool.version) {
+    status = "version-mismatch";
+  } else if (issues.length > 0) {
+    status = "incomplete";
+  }
+
+  return {
+    name: tool.name,
+    packageName: tool.packageName,
+    expectedVersion: tool.version,
+    installedVersion,
+    installedToolRoot: installed?.toolRoot ?? null,
+    bin: tool.bin,
+    toolRoot,
+    shimPath,
+    status,
+    issues
   };
 }
 
@@ -183,11 +304,15 @@ async function findInstalledPackageJson(
   tool: ToolchainTool,
   toolRoot: string
 ): Promise<string> {
-  const packageJsonPath = path.join(toolRoot, "node_modules", ...tool.packageName.split("/"), "package.json");
+  const packageJsonPath = getInstalledPackageJsonPath(tool, toolRoot);
   if (!(await exists(packageJsonPath))) {
     return "package.json not found";
   }
   return readFile(packageJsonPath, "utf8");
+}
+
+function getInstalledPackageJsonPath(tool: ToolchainTool, toolRoot: string): string {
+  return path.join(toolRoot, "node_modules", ...tool.packageName.split("/"), "package.json");
 }
 
 function isToolName(value: string): value is ToolName {
@@ -205,4 +330,62 @@ async function exists(target: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+async function canExecute(target: string): Promise<boolean> {
+  try {
+    await access(target, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+interface InstalledPackageInfo {
+  version: string;
+  toolRoot: string;
+}
+
+async function readInstalledPackageInfo(
+  packageJsonPath: string,
+  toolRoot: string
+): Promise<InstalledPackageInfo | null> {
+  try {
+    const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8")) as {
+      version?: unknown;
+    };
+    return typeof packageJson.version === "string"
+      ? { version: packageJson.version, toolRoot }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+async function findAnyInstalledPackage(
+  tool: ToolchainTool,
+  toolsRoot: string
+): Promise<InstalledPackageInfo | null> {
+  const toolBaseRoot = path.join(toolsRoot, tool.name);
+
+  try {
+    const versions = await readdir(toolBaseRoot, { withFileTypes: true });
+    const candidates = versions
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => path.join(toolBaseRoot, entry.name))
+      .sort()
+      .reverse();
+
+    for (const candidateRoot of candidates) {
+      const packageJsonPath = getInstalledPackageJsonPath(tool, candidateRoot);
+      const installed = await readInstalledPackageInfo(packageJsonPath, candidateRoot);
+      if (installed) {
+        return installed;
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }

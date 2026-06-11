@@ -47,6 +47,23 @@ export async function promptForAnswers(
   }
 }
 
+export async function promptForToolchainRepair(toolCount: number): Promise<boolean> {
+  if (!input.isTTY) {
+    return false;
+  }
+
+  const rl = readline.createInterface({ input, output });
+  try {
+    const answer = await rl.question(
+      `Install or repair ${toolCount} missing AIOps toolchain item(s) now? [Y/n]: `
+    );
+    const normalized = answer.trim().toLowerCase();
+    return normalized === "" || normalized === "y" || normalized === "yes";
+  } finally {
+    rl.close();
+  }
+}
+
 async function answersFromPipedInput(defaults: BootstrapDefaults): Promise<BootstrapAnswers> {
   const chunks: Buffer[] = [];
   for await (const chunk of input) {

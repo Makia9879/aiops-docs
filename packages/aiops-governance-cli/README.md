@@ -140,7 +140,7 @@ aiops-governance link-docs --docs-repo ../aiops-docs
 aiops-governance install --with none
 ```
 
-默认安装固定版本工具链，可用 `--with none` 跳过。
+默认会先检查固定版本工具链，输出每个工具的期望版本、当前版本和缺失项。交互式终端会提示是否由安装程序自动补齐；非交互环境必须传 `--yes` 才自动补齐；可用 `--with none` 跳过工具链。
 
 ## 选项
 
