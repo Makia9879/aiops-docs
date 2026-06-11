@@ -164,10 +164,12 @@ aiops install --with none
 | `--project <id>` | 自动推断 | 项目标识 |
 | `--products <list>` | `core` | 逗号分隔的产品列表 |
 | `--services <groups>` | `<product>-service` | 服务分组，例如 `ca:ca-admin+ca-worker,kmc:kmc-admin` |
+| `--product-repos <mappings>` | 无 | 产品仓库列表或映射，例如 `ca_admin,ra_admin` 或 `ca=./ca_admin`；自动生成同名 service、写入 `code_root` 并读取当前 Git 分支 |
 | `--iteration <id>` | `current` | 初始项目迭代 |
 | `--docs-branch <branch>` | `main` | 初始文档分支 |
 | `--service-branch <branch>` | docs branch | 初始服务主分支 |
 | `--code-root <path>` | 当前目录 | 初始服务代码根 |
+| `--link-product-repos` | 关闭 | 初始化后把 `--product-repos` 里的源码仓库 hook 链接到当前文档库 |
 | `--level <level>` | `high` | `low` / `medium` / `high` / `xhigh` |
 | `--language <lang>` | `zh-CN` | 知识文档语言 |
 | `--skills-source <path>` | 自动发现 | 覆盖技能源目录 |

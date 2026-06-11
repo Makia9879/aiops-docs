@@ -93,6 +93,14 @@ aiops setup
 
 CLI 会引导完成项目名称、产品域、治理等级、文档语言等配置。
 
+已有多仓库项目可直接把产品仓库交给 CLI。CLI 会为每个仓库生成同名 product/service，自动读取当前 Git 分支写入 `required_branch`，并可把各源码仓库 hook 链接到当前文档库：
+
+```bash
+aiops setup --yes --project ca-platform \
+  --product-repos ca_admin,ra_admin,kmc_admin,ocsp-responder \
+  --link-product-repos
+```
+
 ### 按场景使用
 
 初始化完成后，根据场景对 agent 说：
@@ -161,6 +169,8 @@ aiops link-docs --docs-repo ../aiops-docs
 | `--yes, -y` | 跳过交互问答，使用默认值 | 关闭 |
 | `--project <id>` | 项目标识 | 自动从 `package.json` 推断 |
 | `--products <list>` | 产品域，逗号分隔 | `core` |
+| `--product-repos <list>` | 产品仓库列表或 `product=path` 映射，自动写 `code_root` 和当前分支 | 关闭 |
+| `--link-product-repos` | 初始化后把产品仓库 hook 链接到当前文档库 | 关闭 |
 | `--level <level>` | 治理等级：`low` / `medium` / `high` / `xhigh` | `high` |
 | `--language <lang>` | 文档语言 | `zh-CN` |
 | `--with <tools>` | 辅助工具链：`default` / `none` / 逗号列表 | `default` |

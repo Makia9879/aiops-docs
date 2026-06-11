@@ -3,6 +3,7 @@ import { stdin as input, stdout as output } from "node:process";
 import {
   createBootstrapQuestions,
   createBootstrapProducts,
+  createBootstrapProductsFromRepos,
   parseGovernanceLevel,
   normalizeProjectId,
   type BootstrapAnswers,
@@ -27,14 +28,22 @@ export async function promptForAnswers(
       values.set(question.id, answer.trim() || question.defaultValue);
     }
 
+    const products = values.get("productRepos")
+      ? await createBootstrapProductsFromRepos({
+          workspaceRoot: defaults.workspaceRoot ?? process.cwd(),
+          productRepos: values.get("productRepos") ?? "",
+          requiredBranch: defaults.products[0]?.services[0]?.requiredBranch
+        })
+      : createBootstrapProducts({
+          products: values.get("products"),
+          services: values.get("services"),
+          codeRoot: defaults.products[0]?.services[0]?.codeRoot ?? ".",
+          requiredBranch: defaults.products[0]?.services[0]?.requiredBranch ?? "main"
+        });
+
     return {
       projectId: normalizeProjectId(values.get("projectId") ?? defaults.projectId),
-      products: createBootstrapProducts({
-        products: values.get("products"),
-        services: values.get("services"),
-        codeRoot: defaults.products[0]?.services[0]?.codeRoot ?? ".",
-        requiredBranch: defaults.products[0]?.services[0]?.requiredBranch ?? "main"
-      }),
+      products,
       projectIteration: defaults.projectIteration,
       docsBranch: defaults.docsBranch,
       governanceLevel: parseGovernanceLevel(
@@ -80,14 +89,22 @@ async function answersFromPipedInput(defaults: BootstrapDefaults): Promise<Boots
     values.set(question.id, answer || question.defaultValue);
   }
 
+  const products = values.get("productRepos")
+    ? await createBootstrapProductsFromRepos({
+        workspaceRoot: defaults.workspaceRoot ?? process.cwd(),
+        productRepos: values.get("productRepos") ?? "",
+        requiredBranch: defaults.products[0]?.services[0]?.requiredBranch
+      })
+    : createBootstrapProducts({
+        products: values.get("products"),
+        services: values.get("services"),
+        codeRoot: defaults.products[0]?.services[0]?.codeRoot ?? ".",
+        requiredBranch: defaults.products[0]?.services[0]?.requiredBranch ?? "main"
+      });
+
   return {
     projectId: normalizeProjectId(values.get("projectId") ?? defaults.projectId),
-    products: createBootstrapProducts({
-      products: values.get("products"),
-      services: values.get("services"),
-      codeRoot: defaults.products[0]?.services[0]?.codeRoot ?? ".",
-      requiredBranch: defaults.products[0]?.services[0]?.requiredBranch ?? "main"
-    }),
+    products,
     projectIteration: defaults.projectIteration,
     docsBranch: defaults.docsBranch,
     governanceLevel: parseGovernanceLevel(

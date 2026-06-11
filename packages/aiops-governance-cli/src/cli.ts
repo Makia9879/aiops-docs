@@ -16,7 +16,9 @@ import {
   normalizeProjectId,
   parseGovernanceLevel,
   createBootstrapProducts,
-  type BootstrapAnswers
+  createBootstrapProductsFromRepos,
+  type BootstrapAnswers,
+  type BootstrapDefaults
 } from "./questions.js";
 import { promptForAnswers, promptForToolchainRepair } from "./tui.js";
 
@@ -130,18 +132,26 @@ async function runInit(args: ReturnType<typeof parseArgs>): Promise<void> {
   const inferredProjectId = normalizeProjectId(args.project ?? (await inferProjectId(args.cwd)));
   const docsBranch = args.docsBranch ?? args.serviceBranch ?? "main";
   const serviceBranch = args.serviceBranch ?? docsBranch;
-  const defaults: BootstrapAnswers = {
+  const defaults: BootstrapDefaults = {
     projectId: inferredProjectId,
-    products: createBootstrapProducts({
-      products: args.products,
-      services: args.services,
-      codeRoot: args.codeRoot ?? args.cwd,
-      requiredBranch: serviceBranch
-    }),
+    products: args.productRepos
+      ? await createBootstrapProductsFromRepos({
+          workspaceRoot: args.cwd,
+          productRepos: args.productRepos,
+          requiredBranch: args.serviceBranch
+        })
+      : createBootstrapProducts({
+          products: args.products,
+          services: args.services,
+          codeRoot: args.codeRoot ?? args.cwd,
+          requiredBranch: serviceBranch
+        }),
     projectIteration: args.iteration?.trim() || "current",
     docsBranch,
     governanceLevel: parseGovernanceLevel(args.level ?? "high"),
-    knowledgeLanguage: args.language ?? "zh-CN"
+    knowledgeLanguage: args.language ?? "zh-CN",
+    productRepos: args.productRepos,
+    workspaceRoot: args.cwd
   };
 
   const answers = args.yes
@@ -149,6 +159,9 @@ async function runInit(args: ReturnType<typeof parseArgs>): Promise<void> {
     : await promptForAnswers(defaults);
 
   const result = await initializeWorkspace(args.cwd, answers);
+  const linkedRepos = args.linkProductRepos
+    ? await linkProductRepositories(args.cwd, answers)
+    : [];
 
   console.log(`Workspace: ${result.workspaceRoot}`);
   console.log(`AIOps root: ${result.aiopsRoot}`);
@@ -156,6 +169,30 @@ async function runInit(args: ReturnType<typeof parseArgs>): Promise<void> {
   console.log(`Created: ${result.created.length}`);
   console.log(`Updated: ${result.updated.length}`);
   console.log(`Skipped existing: ${result.skipped.length}`);
+  if (linkedRepos.length > 0) {
+    console.log(`Linked product repos: ${linkedRepos.length}`);
+  }
+}
+
+async function linkProductRepositories(
+  docsRoot: string,
+  answers: BootstrapAnswers
+): Promise<string[]> {
+  const codeRoots = Array.from(
+    new Set(
+      answers.products
+        .flatMap((product) => product.services.map((service) => service.codeRoot))
+        .filter((codeRoot) => codeRoot !== docsRoot)
+    )
+  );
+  const linked: string[] = [];
+
+  for (const codeRoot of codeRoots) {
+    await linkDocsRepository(codeRoot, docsRoot);
+    linked.push(codeRoot);
+  }
+
+  return linked;
 }
 
 async function runLinkDocs(args: ReturnType<typeof parseArgs>): Promise<void> {
@@ -187,10 +224,12 @@ Options:
   --project <id>       Project id under .aiops/projects/
   --products <list>    Comma-separated products; default core
   --services <groups>  Service groups, e.g. ca:ca-admin+ca-worker,kmc:kmc-admin
+  --product-repos <m>  Product repo mappings, e.g. ca_admin,ra_admin or ca=./ca_admin
   --iteration <id>     Initial project iteration id; default current
   --docs-branch <b>    Initial docs branch; default main
   --service-branch <b> Initial required service branch; default docs branch
   --code-root <path>   Initial service code root; default current directory
+  --link-product-repos Link product repositories to this docs workspace after init
   --level <level>      low, medium, high, or xhigh; default high
   --language <lang>    Knowledge language; default zh-CN
   --host <host>        config-ui host; default 127.0.0.1

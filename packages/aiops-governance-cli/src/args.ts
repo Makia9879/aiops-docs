@@ -4,6 +4,7 @@ export interface ParsedArgs {
   project?: string;
   products?: string;
   services?: string;
+  productRepos?: string;
   iteration?: string;
   docsBranch?: string;
   serviceBranch?: string;
@@ -15,6 +16,7 @@ export interface ParsedArgs {
   withTools?: string;
   toolsRoot?: string;
   docsRepo?: string;
+  linkProductRepos: boolean;
   host?: string;
   port?: number;
   noOpen: boolean;
@@ -28,6 +30,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   const parsed: ParsedArgs = {
     command,
     yes: false,
+    linkProductRepos: false,
     noOpen: false,
     readOnly: false,
     cwd: process.cwd()
@@ -76,6 +79,16 @@ export function parseArgs(argv: string[]): ParsedArgs {
 
     if (arg.startsWith("--services=")) {
       parsed.services = arg.slice("--services=".length);
+      continue;
+    }
+
+    if (arg === "--product-repos") {
+      parsed.productRepos = readOptionValue(arg, args);
+      continue;
+    }
+
+    if (arg.startsWith("--product-repos=")) {
+      parsed.productRepos = arg.slice("--product-repos=".length);
       continue;
     }
 
@@ -216,6 +229,11 @@ export function parseArgs(argv: string[]): ParsedArgs {
 
     if (arg.startsWith("--docs-repo=")) {
       parsed.docsRepo = arg.slice("--docs-repo=".length);
+      continue;
+    }
+
+    if (arg === "--link-product-repos") {
+      parsed.linkProductRepos = true;
       continue;
     }
 

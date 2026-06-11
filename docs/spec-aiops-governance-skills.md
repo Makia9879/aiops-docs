@@ -244,8 +244,9 @@ Bootstrap 提问必须固化为 TypeScript question model，并被 CLI/TUI 与 s
 1. Project id.
 2. Products.
 3. Services for each product.
-4. Governance level.
-5. Knowledge language.
+4. Product repositories.
+5. Governance level.
+6. Knowledge language.
 
 默认答案：
 
@@ -253,6 +254,7 @@ Bootstrap 提问必须固化为 TypeScript question model，并被 CLI/TUI 与 s
 project id: 从 manifest 或当前目录推断，kebab-case，需用户确认
 products: 留空则使用 core
 services: 留空则为每个 product 使用 <product>-service
+product repositories: 可选；支持 repo 路径列表或 product=repo 映射；填写后自动生成同名 service、写入 code_root，并读取当前 Git 分支作为 required_branch
 governance_level: high
 knowledge_language: zh-CN
 ```
@@ -270,7 +272,7 @@ knowledge_language: zh-CN
 - Trellis integration
 - auto commit override
 
-服务 `code_root` 和 `required_branch` 在 bootstrap 阶段可以使用安全占位或推断值；历史项目 intake、knowledge review 或 `config-ui` 必须确认或修正它们。
+服务 `code_root` 和 `required_branch` 在 bootstrap 阶段可以使用安全占位或推断值。对于已成型多仓库项目，CLI 必须支持一键传入产品仓库映射并直接生成正确 `code_root` 和 `required_branch`，不要求用户初始化后手工改 YAML。
 
 ## 7. Governance Config
 

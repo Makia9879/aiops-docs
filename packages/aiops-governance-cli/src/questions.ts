@@ -1,3 +1,6 @@
+import { access, readFile } from "node:fs/promises";
+import path from "node:path";
+
 export type GovernanceLevel = "low" | "medium" | "high" | "xhigh";
 
 export interface BootstrapService {
@@ -21,12 +24,16 @@ export interface BootstrapAnswers {
   knowledgeLanguage: string;
 }
 
-export interface BootstrapDefaults extends BootstrapAnswers {}
+export interface BootstrapDefaults extends BootstrapAnswers {
+  productRepos?: string;
+  workspaceRoot?: string;
+}
 
 export type BootstrapQuestionId =
   | "projectId"
   | "products"
   | "services"
+  | "productRepos"
   | "governanceLevel"
   | "knowledgeLanguage";
 
@@ -65,6 +72,12 @@ export function createBootstrapQuestions(
       label: "Services",
       defaultValue: formatServiceGroups(defaults.products),
       help: "product:service+service groups; empty means <product>-service"
+    },
+    {
+      id: "productRepos",
+      label: "Product repos",
+      defaultValue: defaults.productRepos ?? "",
+      help: "comma-separated repo paths or product=path mappings; empty keeps Products/Services"
     },
     {
       id: "governanceLevel",
@@ -112,6 +125,44 @@ export function createBootstrapProducts(options: {
       requiredBranch: options.requiredBranch
     }))
   }));
+}
+
+export async function createBootstrapProductsFromRepos(options: {
+  workspaceRoot: string;
+  productRepos: string;
+  requiredBranch?: string;
+}): Promise<BootstrapProduct[]> {
+  const repos = parseProductRepos(options.productRepos, options.workspaceRoot);
+  if (repos.length === 0) {
+    throw new Error("No product repositories were provided.");
+  }
+
+  const products: BootstrapProduct[] = [];
+  for (const repo of repos) {
+    const branch = options.requiredBranch ?? await readCurrentGitBranch(repo.codeRoot);
+    products.push({
+      id: repo.productId,
+      name: repo.productId,
+      services: [
+        {
+          id: repo.serviceId,
+          codeRoot: repo.codeRoot,
+          requiredBranch: branch
+        }
+      ]
+    });
+  }
+
+  return products;
+}
+
+export function formatProductRepos(products: BootstrapProduct[]): string {
+  return products
+    .map((product) => {
+      const service = product.services[0];
+      return `${product.id}=${service?.codeRoot ?? ""}`;
+    })
+    .join(",");
 }
 
 function parseIdList(value: string | undefined, fallback: string[]): string[] {
@@ -168,6 +219,85 @@ function parseServiceGroups(value: string | undefined, productIds: string[]): Re
   }
 
   return groups;
+}
+
+interface ProductRepoMapping {
+  productId: string;
+  serviceId: string;
+  codeRoot: string;
+}
+
+function parseProductRepos(value: string, workspaceRoot: string): ProductRepoMapping[] {
+  const result: ProductRepoMapping[] = [];
+  const seen = new Set<string>();
+  const chunks = value.split(",").map((chunk) => chunk.trim()).filter(Boolean);
+
+  for (const chunk of chunks) {
+    const mapping = parseProductRepo(chunk, workspaceRoot);
+    if (seen.has(mapping.productId)) {
+      throw new Error(`Duplicate product repository mapping: ${mapping.productId}`);
+    }
+    seen.add(mapping.productId);
+    result.push(mapping);
+  }
+
+  return result;
+}
+
+function parseProductRepo(value: string, workspaceRoot: string): ProductRepoMapping {
+  const [left, right] = splitMapping(value);
+  const rawCodeRoot = right ?? left;
+  const codeRoot = path.resolve(workspaceRoot, rawCodeRoot);
+  const productId = normalizeProjectId(right ? left : path.basename(codeRoot));
+
+  return {
+    productId,
+    serviceId: productId,
+    codeRoot
+  };
+}
+
+function splitMapping(value: string): [string, string | undefined] {
+  const delimiter = value.indexOf("=");
+  if (delimiter < 0) {
+    return [value, undefined];
+  }
+
+  const left = value.slice(0, delimiter).trim();
+  const right = value.slice(delimiter + 1).trim();
+  if (!left || !right) {
+    throw new Error(`Invalid product repository mapping: ${value}`);
+  }
+  return [left, right];
+}
+
+async function readCurrentGitBranch(repoRoot: string): Promise<string> {
+  const headPath = path.join(repoRoot, ".git", "HEAD");
+  try {
+    const head = (await readFile(headPath, "utf8")).trim();
+    const refPrefix = "ref: refs/heads/";
+    if (head.startsWith(refPrefix)) {
+      return head.slice(refPrefix.length);
+    }
+    if (head) {
+      return head;
+    }
+  } catch {
+    if (!(await exists(repoRoot))) {
+      throw new Error(`Product repository does not exist: ${repoRoot}`);
+    }
+  }
+
+  return "main";
+}
+
+async function exists(target: string): Promise<boolean> {
+  try {
+    await access(target);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function parseServiceList(value: string | undefined): string[] {

@@ -97,6 +97,11 @@ aiops init --yes --project my-app
 # 多产品项目
 aiops init --yes --project cert-auth --products CA,RA,KMC,OCSP
 
+# 已成型多仓库项目：产品即代码仓库
+aiops init --yes --project ca-platform \
+  --product-repos ca_admin,ra_admin,kmc_admin,ocsp-responder \
+  --link-product-repos
+
 # 最高治理等级
 aiops init --yes --project my-app --level xhigh
 ```
@@ -147,10 +152,12 @@ aiops link-docs --docs-repo ../aiops-docs
 | `--project <id>` | string | 自动推断 | 项目标识，用作 `.aiops/projects/<id>/` 的目录名。默认从 `package.json` 的 `name` 字段或当前目录名推断 |
 | `--products <list>` | string | `core` | 逗号分隔的产品列表。例如 `CA,RA,KMC,OCSP` |
 | `--services <groups>` | string | `<product>-service` | 产品到服务的分组，例如 `ca:ca-admin+ca-worker,kmc:kmc-admin` |
+| `--product-repos <mappings>` | string | — | 产品仓库列表或映射。例如 `ca_admin,ra_admin` 或 `ca=./ca_admin`。CLI 会自动生成同名 service，写入每个仓库的 `code_root`，并读取当前 Git 分支作为 `required_branch` |
 | `--iteration <id>` | string | `current` | 初始化时创建的项目迭代 |
 | `--docs-branch <branch>` | string | `main` | 初始化时写入的文档分支 |
 | `--service-branch <branch>` | string | docs branch | 初始化时写入的微服务主分支 |
 | `--code-root <path>` | string | 当前目录 | 初始化时写入的微服务源码根 |
+| `--link-product-repos` | flag | 关闭 | 初始化后把 `--product-repos` 中的源码仓库 hook 链接到当前文档库 |
 | `--level <level>` | string | `high` | 治理等级：`low`、`medium`、`high`、`xhigh` |
 | `--language <lang>` | string | `zh-CN` | 知识文档语言 |
 

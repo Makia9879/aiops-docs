@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PACKAGE_DIR="/repo/packages/aiops-governance-cli"
-EXPECTED_VERSION="${EXPECTED_VERSION:-0.1.3}"
+EXPECTED_VERSION="${EXPECTED_VERSION:-0.1.4}"
 NODE_IMAGE="${NODE_IMAGE:-node:24-bookworm}"
 DRY_RUN="${DRY_RUN:-false}"
 
