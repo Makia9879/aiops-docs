@@ -28,17 +28,18 @@ export default defineUserConfig({
           text: "场景",
           children: [
             { text: "4. 历史项目入库", link: "/knowledge/historical-project-documentation.md" },
-            { text: "5. 日常文档维护", link: "/knowledge/document-maintenance.md" },
-            { text: "6. 新项目初始化", link: "/knowledge/new-project-initialization.md" }
+            { text: "5. 文档召回辅助研发", link: "/knowledge/development-context-recall.md" },
+            { text: "6. 日常文档维护", link: "/knowledge/document-maintenance.md" },
+            { text: "7. 新项目初始化", link: "/knowledge/new-project-initialization.md" }
           ]
         },
         {
           text: "How it works",
           children: [
-            { text: "7. 治理模型", link: "/knowledge/governance-model.md" },
-            { text: "8. 三级结构", link: "/knowledge/branch-bound-structure.md" },
-            { text: "9. 迭代绑定", link: "/knowledge/iteration-bindings.md" },
-            { text: "10. config-ui", link: "/knowledge/config-ui.md" }
+            { text: "8. 治理模型", link: "/knowledge/governance-model.md" },
+            { text: "9. 三级结构", link: "/knowledge/branch-bound-structure.md" },
+            { text: "10. 迭代绑定", link: "/knowledge/iteration-bindings.md" },
+            { text: "11. config-ui", link: "/knowledge/config-ui.md" }
           ]
         },
         {
@@ -49,6 +50,7 @@ export default defineUserConfig({
             { text: "知识生命周期（总调度）", link: "/knowledge/skills/aiops-knowledge-lifecycle.md" },
             { text: "治理引导", link: "/knowledge/skills/aiops-governance-bootstrap.md" },
             { text: "历史项目入库", link: "/knowledge/skills/aiops-historical-project-intake.md" },
+            { text: "文档召回辅助研发", link: "/knowledge/skills/aiops-dev-context-recall.md" },
             { text: "日常文档维护", link: "/knowledge/skills/aiops-daily-doc-maintenance.md" },
             { text: "新项目简报", link: "/knowledge/skills/aiops-new-project-briefing.md" },
             { text: "知识审查", link: "/knowledge/skills/aiops-knowledge-review.md" }

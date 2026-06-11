@@ -18,7 +18,7 @@ npx -y @makia9879/aiops setup --yes --project my-project
 
 这一行命令做了两件事：
 
-1. 把 6 个治理技能安装到 agent 的运行时目录（`~/.agents/skills/` 和 `~/.codex/skills/`）
+1. 把 7 个治理技能安装到 agent 的运行时目录（`~/.agents/skills/` 和 `~/.codex/skills/`）
 2. 在当前目录创建 `.aiops/` 知识治理结构
 
 完成后你会看到类似这样的输出：
@@ -26,7 +26,7 @@ npx -y @makia9879/aiops setup --yes --project my-project
 ```
 Skills source: /path/to/skills
 Skills targets: ~/.agents/skills, ~/.codex/skills
-Skills installed: 6
+Skills installed: 7
 Tools installed: 3
 Workspace: /path/to/your-project
 AIOps root: /path/to/your-project/.aiops
@@ -103,12 +103,14 @@ docker compose up
 
 ## 第五步：后续日常使用
 
-初始化只做一次。日常使用中，知识维护是自动的：
+初始化只做一次。日常使用中，先用知识库辅助研发，再让维护流程把变更同步回知识库：
 
-1. 你正常写代码，AI agent 辅助开发
-2. Hook 自动把有语义价值的 agent 事件记录到文档仓库 `.aiops/diff-records/pending.md`
-3. 达到治理阈值后，Claude Code 执行 `aiops-daily-doc-maintenance`，先读取 `iteration-bindings.yaml`，再根据 pending 记录更新相关文档
-4. 你也可以随时对 agent 说：**"检查一下知识库是否需要更新"**
+1. 研发、调试、评审前，对 agent 说：**"先召回文档辅助研发"**
+2. Agent 执行 `aiops-dev-context-recall`，读取 `project.yaml`、`iteration-bindings.yaml` 和相关 canonical docs
+3. 你正常写代码，AI agent 带着项目约束辅助开发
+4. Hook 自动把有语义价值的 agent 事件记录到文档仓库 `.aiops/diff-records/pending.md`
+5. 达到治理阈值后，Claude Code 执行 `aiops-daily-doc-maintenance`，先读取 `iteration-bindings.yaml`，再根据 pending 记录更新相关文档
+6. 你也可以随时对 agent 说：**"检查一下知识库是否需要更新"**
 
 治理等级决定了自动化程度。默认是 `high`——pending 积累到一定量后异步维护并在安全时提交。详见[治理模型](./governance-model.md)。
 
@@ -125,6 +127,7 @@ docker compose up
 | 跳过工具链安装 | `--with none` |
 | 降低治理等级 | `--level medium` |
 | 让 agent 整理知识库 | "帮我整理项目知识库" |
+| 让 agent 先召回文档再研发 | "先召回文档辅助研发" |
 | 让 agent 检查文档 | "检查一下知识库是否有需要更新的地方" |
 
 详细命令参数见 [CLI 命令参考](./cli-reference.md)，每个技能的能力和边界见[技能说明](./skills.md)。三级结构见[项目、产品、微服务三级结构](./branch-bound-structure.md)，维护前预检见[迭代绑定](./iteration-bindings.md)。

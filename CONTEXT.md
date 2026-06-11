@@ -10,13 +10,13 @@ The working directory scope where AIOps governance assets are installed and exec
 
 ### AIOps Knowledge Lifecycle
 
-The end-to-end workflow for creating, maintaining, and reviewing structured project knowledge for AIOps work. It covers historical project intake from existing code, daily documentation maintenance by coding agents, and new project briefing from requirements input.
+The end-to-end workflow for creating, recalling, maintaining, and reviewing structured project knowledge for AIOps work. It covers historical project intake from existing code, development context recall for coding-agent work, daily documentation maintenance by coding agents, and new project briefing from requirements input.
 
 中文术语：AIOps 知识库生命周期工作流。
 
 ### Scenario-Oriented Subskills
 
-The AIOps Knowledge Lifecycle is decomposed by input scenario rather than by processing phase. The primary subskills are historical project intake, daily documentation maintenance, and new project briefing. Shared phases such as evidence collection, schema mapping, writing, and review live in shared references or scripts.
+The AIOps Knowledge Lifecycle is decomposed by input scenario rather than by processing phase. The primary subskills are historical project intake, development context recall, daily documentation maintenance, and new project briefing. Shared phases such as evidence collection, schema mapping, writing, and review live in shared references or scripts.
 
 中文术语：场景导向子技能。
 
@@ -74,6 +74,12 @@ The maintenance workflow that reads pending Markdown diff records as semantic ch
 
 中文术语：语义维护。
 
+### Development Context Recall
+
+The workflow that reads canonical project knowledge before or during implementation, debugging, review, or explanation so a coding agent can use project iteration, product, service, PRD, architecture, specs, ADR, workflow, and open-question context as development constraints.
+
+中文术语：文档召回辅助研发。
+
 ### Governance Level
 
 A preset that controls the amount of knowledge-maintenance pressure applied by hooks and skills. The supported levels are `low`, `medium`, `high`, and `xhigh`; `high` is the recommended default.
@@ -118,7 +124,7 @@ A task-execution copy or slice of canonical knowledge used by tools such as Trel
 
 ### Routed Skill Set
 
-The AIOps Knowledge Lifecycle is implemented as multiple independently triggerable skills plus a routing skill. The routing skill chooses the scenario, while scenario skills handle historical project intake, daily documentation maintenance, new project briefing, and knowledge review.
+The AIOps Knowledge Lifecycle is implemented as multiple independently triggerable skills plus a routing skill. The routing skill chooses the scenario, while scenario skills handle historical project intake, development context recall, daily documentation maintenance, new project briefing, and knowledge review.
 
 中文术语：路由式技能集。
 

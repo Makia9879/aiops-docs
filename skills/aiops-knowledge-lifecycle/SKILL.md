@@ -1,6 +1,6 @@
 ---
 name: aiops-knowledge-lifecycle
-description: Routes AIOps knowledge-base work across historical project intake, daily documentation maintenance, new project briefing, and knowledge review. Use when the user asks to manage an AIOps knowledge base, create structured project knowledge, maintain docs with a coding agent, or decide which AIOps knowledge workflow to run.
+description: Routes AIOps knowledge-base work across historical project intake, development context recall, daily documentation maintenance, new project briefing, and knowledge review. Use when the user asks to manage an AIOps knowledge base, create structured project knowledge, recall project docs for coding work, maintain docs with a coding agent, or decide which AIOps knowledge workflow to run.
 ---
 
 # AIOps Knowledge Lifecycle
@@ -19,6 +19,7 @@ The lifecycle covers:
 
 - Bootstrap: install governance structure, project skeleton, guides site, hooks, and defaults.
 - Historical project intake: existing code/docs -> canonical project knowledge.
+- Development context recall: canonical project knowledge -> coding-agent development context.
 - Daily documentation maintenance: pending semantic changes -> consistent doc updates.
 - New project briefing: requirements input -> initial canonical project knowledge.
 - Knowledge review: completeness, evidence, agent usability, and human readability checks.
@@ -49,6 +50,7 @@ Classify the user's request:
 
 - Install, setup, initialize, hooks, governance marker, or project skeleton: use `aiops-governance-bootstrap`.
 - Existing workspace or legacy project to summarize: use `aiops-historical-project-intake`.
+- Coding, debugging, review, explanation, or implementation work that should use project docs: use `aiops-dev-context-recall`.
 - Existing structured docs need update after code/design changes: use `aiops-daily-doc-maintenance`.
 - New project from requirements, meeting notes, PRD, or rough idea: use `aiops-new-project-briefing`.
 - User asks to audit, review, improve, or validate the knowledge base: use `aiops-knowledge-review`.
@@ -57,8 +59,9 @@ If the request spans multiple scenarios, run them in this order:
 
 1. Bootstrap if `.aiops/governance.yaml` is missing.
 2. Historical intake or new briefing.
-3. Daily maintenance for specific changes.
-4. Knowledge review.
+3. Development context recall before implementation, debugging, review, or explanation.
+4. Daily maintenance for specific changes after implementation or design drift.
+5. Knowledge review.
 
 ## Shared References
 

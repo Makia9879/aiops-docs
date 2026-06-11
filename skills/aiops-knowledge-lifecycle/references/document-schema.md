@@ -9,6 +9,11 @@ Project Docs -> Product Docs -> Service Docs
 
 Canonical docs are the long-lived source of truth for coding agents. Guides are the human reading layer and must link back to canonical docs.
 
+Coding agents should use canonical docs in two directions:
+
+- development context recall: read project, product, and service docs before or during code work;
+- semantic maintenance: update those docs after pending code or design changes require knowledge updates.
+
 ## Workspace Structure
 
 ```text
@@ -88,6 +93,20 @@ Canonical docs are the long-lived source of truth for coding agents. Guides are 
 - `iterations/`: project-level iteration documents.
 - `products/`: product-level documents and service subtrees.
 - `guides/`: project-local VuePress site for human reading. It mirrors and explains canonical knowledge, but canonical governance remains under `iterations/` and `products/`.
+
+## Development Context Recall
+
+For implementation, debugging, review, explanation, and test-writing tasks, recall context in this order:
+
+1. `project.yaml` and `iteration-bindings.yaml`.
+2. Selected `iterations/<project-iteration>/` docs.
+3. Relevant `products/<product>/` canonical docs.
+4. Relevant `products/<product>/services/<service>/` canonical docs.
+5. `open-questions.md`.
+6. `guides/docs/` only as a reading layer.
+7. Source code, tests, configs, migrations, manifests, and existing docs as evidence.
+
+Before service-level code changes, compare the service `code_root` current branch with the selected iteration `required_branch`. If they differ, report the mismatch and use canonical docs as target-iteration context only after human confirmation.
 
 ## Config Files
 

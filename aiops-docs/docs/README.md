@@ -13,6 +13,8 @@ actions:
 features:
   - title: 历史项目入库
     details: 已有项目代码和文档杂乱？从源码、配置、测试逆向梳理出可维护的知识结构，让 agent 理解项目边界和业务链路。
+  - title: 文档召回辅助研发
+    details: 开发、调试、评审前先召回项目迭代、产品、微服务文档和源码证据，让 agent 带着约束改代码。
   - title: 日常文档维护
     details: 文档写完就过时？通过 Hook 自动记录代码变更，agent 根据影响面跨文档同步更新，保持知识库和代码一致。
   - title: 新项目初始化
@@ -48,11 +50,12 @@ features:
 
 不是"想起来的时候改一下文档"。代码变更通过 Hook 自动记录到 pending 记录中，agent 根据 pending 的语义判断影响面，更新所有相关文档。
 
-## 三个使用场景
+## 四个核心场景
 
 点击上方"了解核心理念"开始阅读，或者直接跳转到你关心的场景：
 
 - [历史项目入库](./knowledge/historical-project-documentation.md) — 已有的老项目，代码和文档都有，怎么整理
+- [文档召回辅助研发](./knowledge/development-context-recall.md) — 开发、调试、评审前怎么让 agent 先用项目知识
 - [日常文档维护](./knowledge/document-maintenance.md) — 项目在持续开发，怎么让文档跟着走
 - [新项目初始化](./knowledge/new-project-initialization.md) — 新启动的项目，从一开始就建好结构
 

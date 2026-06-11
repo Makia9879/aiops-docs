@@ -7,6 +7,7 @@
 当你对 agent 说以下任何话时，lifecycle 会被触发：
 
 - "帮我整理项目知识库"
+- "先召回文档辅助研发"
 - "更新一下文档"
 - "检查知识库有没有问题"
 - "为新项目建一套知识文档"
@@ -15,10 +16,10 @@
 ## 执行逻辑
 
 ```
-你说"帮我整理知识库"
+你说"先召回文档辅助研发"
   → lifecycle 被触发
     → 检查当前目录有没有 .aiops/governance.yaml
-      → 有 → 判断你的意图（入库？维护？审查？）
+      → 有 → 判断你的意图（入库？研发召回？维护？审查？）
         → 路由到对应的子技能
       → 没有 → 先调用 governance-bootstrap 初始化
         → 然后再路由到对应子技能
@@ -29,6 +30,7 @@
 | 你说的话包含... | lifecycle 路由到 |
 |--------------|----------------|
 | "整理""入库""历史""老项目" | `aiops-historical-project-intake` |
+| "开发""调试""评审""解释""测试""召回""辅助研发" | `aiops-dev-context-recall` |
 | "更新""维护""同步""pending" | `aiops-daily-doc-maintenance` |
 | "新建""初始化""新项目""briefing" | `aiops-new-project-briefing` |
 | "审查""检查""review""质量" | `aiops-knowledge-review` |

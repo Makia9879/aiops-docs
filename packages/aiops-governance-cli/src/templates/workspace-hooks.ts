@@ -59,6 +59,8 @@ def main() -> int:
     print("Canonical docs: .aiops/projects/<project>/")
     print("Schema: project iteration -> product version -> service required branch.")
     print("Maintenance input: .aiops/diff-records/pending.md")
+    print("Development recall: for coding tasks, run aiops-dev-context-recall before risky edits.")
+    print("Recall order: iteration docs -> product docs -> service docs -> open questions -> source evidence.")
     print("Before canonical edits: read project.yaml and iteration-bindings.yaml; check service code_root branch against required_branch.")
     print("Hooks record semantic agent events asynchronously; Claude Code maintenance consumes pending records.")
     print("")
@@ -515,12 +517,25 @@ mkdir -p "__DOLLAR__docs_repo/.aiops/tmp"
 hook_log="__DOLLAR__docs_repo/.aiops/tmp/hooks.log"
 python_image="__DOLLAR__{AIOPS_HOOK_PYTHON_IMAGE:-python:3.10-alpine}"
 
-run_python_hook() {
+run_python_hook_docker() {
   script="__DOLLAR__1"
-  if ! command -v docker >/dev/null 2>&1; then
-    echo "AIOps: docker is unavailable; cannot run __DOLLAR__script."
-    return 0
+  action_path="__DOLLAR__{2:-}"
+  if [ -n "__DOLLAR__action_path" ]; then
+    docker run --rm -i \
+      -v "__DOLLAR__docs_repo":/workspace \
+      -w /workspace \
+      -e "AIOPS_AGENT=__DOLLAR__{AIOPS_AGENT:-unknown}" \
+      -e "AIOPS_HOOK_EVENT=__DOLLAR__event" \
+      -e "AIOPS_DOCS_REPO=/workspace" \
+      -e "AIOPS_DOCS_REPO_HOST=__DOLLAR__docs_repo" \
+      -e "AIOPS_SOURCE_REPO_HOST=__DOLLAR__source_repo" \
+      -e "AIOPS_SOURCE_BRANCH=__DOLLAR__source_branch" \
+      -e "AIOPS_SOURCE_HEAD=__DOLLAR__source_head" \
+      -e "AIOPS_MAINTENANCE_ACTION=__DOLLAR__action_path" \
+      "__DOLLAR__python_image" python "__DOLLAR__script"
+    return "__DOLLAR__?"
   fi
+
   docker run --rm -i \
     -v "__DOLLAR__docs_repo":/workspace \
     -w /workspace \
@@ -534,6 +549,60 @@ run_python_hook() {
     "__DOLLAR__python_image" python "__DOLLAR__script"
 }
 
+run_python_hook_native() {
+  script="__DOLLAR__1"
+  action_path="__DOLLAR__{2:-}"
+  python_bin="__DOLLAR__{AIOPS_HOOK_PYTHON:-}"
+  if [ -z "__DOLLAR__python_bin" ]; then
+    if command -v python3 >/dev/null 2>&1; then
+      python_bin="python3"
+    elif command -v python >/dev/null 2>&1; then
+      python_bin="python"
+    else
+      echo "AIOps: docker and native python are unavailable; cannot run __DOLLAR__script."
+      return 0
+    fi
+  fi
+
+  if [ -n "__DOLLAR__action_path" ]; then
+    (cd "__DOLLAR__docs_repo" && env \
+      "AIOPS_AGENT=__DOLLAR__{AIOPS_AGENT:-unknown}" \
+      "AIOPS_HOOK_EVENT=__DOLLAR__event" \
+      "AIOPS_DOCS_REPO=__DOLLAR__docs_repo" \
+      "AIOPS_DOCS_REPO_HOST=__DOLLAR__docs_repo" \
+      "AIOPS_SOURCE_REPO_HOST=__DOLLAR__source_repo" \
+      "AIOPS_SOURCE_BRANCH=__DOLLAR__source_branch" \
+      "AIOPS_SOURCE_HEAD=__DOLLAR__source_head" \
+      "AIOPS_MAINTENANCE_ACTION=__DOLLAR__action_path" \
+      "__DOLLAR__python_bin" "__DOLLAR__script")
+  else
+    (cd "__DOLLAR__docs_repo" && env \
+      "AIOPS_AGENT=__DOLLAR__{AIOPS_AGENT:-unknown}" \
+      "AIOPS_HOOK_EVENT=__DOLLAR__event" \
+      "AIOPS_DOCS_REPO=__DOLLAR__docs_repo" \
+      "AIOPS_DOCS_REPO_HOST=__DOLLAR__docs_repo" \
+      "AIOPS_SOURCE_REPO_HOST=__DOLLAR__source_repo" \
+      "AIOPS_SOURCE_BRANCH=__DOLLAR__source_branch" \
+      "AIOPS_SOURCE_HEAD=__DOLLAR__source_head" \
+      "__DOLLAR__python_bin" "__DOLLAR__script")
+  fi
+}
+
+run_python_hook() {
+  script="__DOLLAR__1"
+  host_action_path="__DOLLAR__{2:-}"
+  container_action_path="__DOLLAR__{3:-}"
+
+  if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+    if run_python_hook_docker "__DOLLAR__script" "__DOLLAR__container_action_path"; then
+      return 0
+    fi
+    echo "AIOps: docker failed for __DOLLAR__script; trying native python fallback."
+  fi
+
+  run_python_hook_native "__DOLLAR__script" "__DOLLAR__host_action_path"
+}
+
 case "__DOLLAR__action" in
   inject)
     run_python_hook .aiops/hooks/aiops_inject_context.py
@@ -542,24 +611,9 @@ case "__DOLLAR__action" in
     run_python_hook .aiops/hooks/aiops_record_diff.py >>"__DOLLAR__hook_log" 2>&1 || true
     ;;
   trigger)
-    if ! command -v docker >/dev/null 2>&1; then
-      echo "AIOps: docker is unavailable; cannot prepare documentation maintenance."
-      exit 0
-    fi
     action_file="__DOLLAR__docs_repo/.aiops/tmp/maintenance-action.env"
     rm -f "__DOLLAR__action_file"
-    docker run --rm \
-      -v "__DOLLAR__docs_repo":/workspace \
-      -w /workspace \
-      -e "AIOPS_AGENT=__DOLLAR__{AIOPS_AGENT:-unknown}" \
-      -e "AIOPS_HOOK_EVENT=__DOLLAR__event" \
-      -e "AIOPS_DOCS_REPO=/workspace" \
-      -e "AIOPS_DOCS_REPO_HOST=__DOLLAR__docs_repo" \
-      -e "AIOPS_SOURCE_REPO_HOST=__DOLLAR__source_repo" \
-      -e "AIOPS_SOURCE_BRANCH=__DOLLAR__source_branch" \
-      -e "AIOPS_SOURCE_HEAD=__DOLLAR__source_head" \
-      -e "AIOPS_MAINTENANCE_ACTION=/workspace/.aiops/tmp/maintenance-action.env" \
-      "__DOLLAR__python_image" python .aiops/hooks/aiops_trigger_maintenance.py
+    run_python_hook .aiops/hooks/aiops_trigger_maintenance.py "__DOLLAR__action_file" /workspace/.aiops/tmp/maintenance-action.env
 
     if [ ! -f "__DOLLAR__action_file" ]; then
       exit 0

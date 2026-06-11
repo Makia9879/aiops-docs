@@ -20,6 +20,8 @@
 
 Codex 和 Claude Code 的 hooks 只负责记录、提醒和触发维护，不直接改 canonical docs。达到治理阈值后，hook 会启动 Claude Code 执行维护；如果 Claude Code 不可用，只把 fallback prompt 输出给当前 coding LLM，让当前 LLM 使用 subagent 维护，不把 runner 故障追加进 `pending.md`。
 
+hook runner 的执行环境是 Docker-first：优先用临时 Python 容器运行记录和触发脚本；源码开发或外部用户环境缺 Docker 时，可降级到本机 `python3` / `python`，但仍只记录 agent event summary，不记录 runner 降级噪音。
+
 如果代码和文档是两套 Git，源码仓库只需要一个本机指针文件：
 
 ```yaml

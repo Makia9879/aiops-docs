@@ -205,6 +205,8 @@ Hook scripts must:
 - trigger Claude Code `aiops-daily-doc-maintenance` according to governance level, or print a subagent fallback prompt when Claude Code is unavailable;
 - never directly rewrite canonical docs.
 
+Generated hook runners should execute hook Python scripts with a temporary Docker container first. If Docker is unavailable or the container run fails in a source-development or external-user environment, they may fall back to native `python3` / `python` to keep recording and maintenance triggers available.
+
 When source repositories and the AIOps docs repository are separate Git repositories, do not copy the full `.aiops/` tree into source repositories. Use a local source-repo pointer:
 
 ```yaml

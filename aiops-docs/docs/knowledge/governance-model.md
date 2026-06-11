@@ -1,6 +1,6 @@
 # 治理模型
 
-前面三篇文章讲了三个使用场景：历史项目入库、日常维护、新项目初始化。这篇文章把视角拉回来，讲它们背后的治理机制：治理等级怎么选、Hook 做什么不做什么、三级文档结构怎么落点、工具链怎么配合。
+前面几篇文章讲了四个核心场景：历史项目入库、文档召回辅助研发、日常维护、新项目初始化。这篇文章把视角拉回来，讲它们背后的治理机制：治理等级怎么选、Hook 做什么不做什么、三级文档结构怎么落点、工具链怎么配合。
 
 ## 治理等级
 
@@ -55,6 +55,8 @@ Hook 是连接代码活动和知识维护的桥梁。目前在 Claude Code 和 C
 原因是 Hook 运行在受限的时机和上下文里。它记录的是 agent 事件摘要和定位线索，不是完整源码 diff。理解语义、找到所有受影响的文档、判断怎么更新，这些由 Claude Code 维护任务或当前 LLM 的 subagent 在完整技能流程里做。
 
 如果 Claude Code runner 不可用，hook 只把 fallback prompt 输出给当前 coding LLM，要求它使用 subagent 执行 `aiops-daily-doc-maintenance`；runner 故障不会写入 `pending.md`。
+
+源码开发和外部用户使用阶段，hook runner 优先用临时 Docker Python 容器执行记录和触发脚本；Docker 不可用或容器执行失败时，降级到本机 `python3` / `python`，保证 pending capture 不因为本地环境缺 Docker 而消失。
 
 ### 安装方式
 

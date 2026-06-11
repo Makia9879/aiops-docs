@@ -17,14 +17,14 @@ Date: 2026-06-09
 
 | 原始目标 | 目标说明 | 对应实现章节 |
 | --- | --- | --- |
-| 历史项目生成文档 | 从已有代码、已有文档、配置、图谱工具结果生成项目/产品/微服务三级 AIOps 知识库。 | `4. Target Workspace Structure`、`8. Project Config`、`13. Guides Site`、`14. Skill Changes` |
-| 维护文档 | hooks 记录变更语义到 `pending.md`，LLM 先读取迭代绑定和源码分支，再根据 pending 语义做 workspace-wide 召回和跨文档一致性维护。 | `9. Governance Levels`、`10. Hooks`、`11. Diff Records`、`12. Semantic Maintenance` |
-| 新项目初始化文档 | 从需求、会议记录、PRD 或粗略想法初始化项目、产品、微服务知识骨架。 | `5. Install Commands`、`6. Bootstrap Questions`、`8. Project Config`、`13. Guides Site`、`14. Skill Changes` |
-| 利用文档继续维护项目 | coding agent 在后续开发中能召回 project iteration、product、service 级 PRD、architecture、specs、ADR、workflows 和 guides，基于文档理解项目并维护代码。 | `4. Target Workspace Structure`、`8. Project Config`、`10. Hooks`、`12. Semantic Maintenance`、`14. Skill Changes` |
-| 人类阅读项目知识 | canonical docs 面向 agent 治理，guides 站点面向人类阅读，每个 project 自带可用 Docker Compose 打开的 VuePress 站点。 | `8. Project Config`、`13. Guides Site` |
+| 历史项目生成文档 | 从已有代码、已有文档、配置、图谱工具结果生成项目/产品/微服务三级 AIOps 知识库。 | `4. Target Workspace Structure`、`8. Project Config`、`14. Guides Site`、`15. Skill Changes` |
+| 文档召回辅助研发 | coding agent 在实现、调试、评审、解释和测试前召回项目迭代、产品、微服务级 PRD、architecture、specs、ADR、workflows、open questions 和源码证据，作为研发约束。 | `4. Target Workspace Structure`、`8. Project Config`、`10. Hooks`、`12. Development Context Recall`、`15. Skill Changes` |
+| 维护文档 | hooks 记录变更语义到 `pending.md`，LLM 先读取迭代绑定和源码分支，再根据 pending 语义做 workspace-wide 召回和跨文档一致性维护。 | `9. Governance Levels`、`10. Hooks`、`11. Diff Records`、`13. Semantic Maintenance` |
+| 新项目初始化文档 | 从需求、会议记录、PRD 或粗略想法初始化项目、产品、微服务知识骨架。 | `5. Install Commands`、`6. Bootstrap Questions`、`8. Project Config`、`14. Guides Site`、`15. Skill Changes` |
+| 人类阅读项目知识 | canonical docs 面向 agent 治理，guides 站点面向人类阅读，每个 project 自带可用 Docker Compose 打开的 VuePress 站点。 | `8. Project Config`、`14. Guides Site` |
 | 降低安装和使用心智负担 | `install`、`init`、`setup` 幂等；`config-ui` 可视化维护项目迭代、产品版本、服务代码根和服务主分支；治理强度用 `low`、`medium`、`high`、`xhigh` 预设。 | `5. Install Commands`、`6. Bootstrap Questions`、`7. Config UI`、`9. Governance Levels` |
 | 支持 Codex 与 Claude Code | hooks 覆盖 Codex 和 Claude Code，平台配置只做追加式幂等写入，hooks 文件作为普通治理文件提交。 | `10. Hooks` |
-| 支持 Trellis 协同 | Trellis 作为任务和上下文注入层，不作为 canonical source；canonical source 仍是 `.aiops/projects/<project>/`。 | `8. Project Config`、`14. Skill Changes` |
+| 支持 Trellis 协同 | Trellis 作为任务和上下文注入层，不作为 canonical source；canonical source 仍是 `.aiops/projects/<project>/`。 | `8. Project Config`、`15. Skill Changes` |
 
 这些目标的共同边界是知识库治理：让 coding agent 能依赖文档继续维护项目，同时让人可以通过 guides 站点阅读项目知识。
 
@@ -45,7 +45,7 @@ Date: 2026-06-09
 本轮做：
 
 - 更新共享 schema/reference，使目标结构迁移到 project/product/service 三级模型。
-- 更新 `aiops-governance-bootstrap`、`aiops-daily-doc-maintenance`、`aiops-historical-project-intake`、`aiops-knowledge-review` 和 lifecycle router 的职责边界。
+- 更新 `aiops-governance-bootstrap`、`aiops-dev-context-recall`、`aiops-daily-doc-maintenance`、`aiops-historical-project-intake`、`aiops-knowledge-review` 和 lifecycle router 的职责边界。
 - 更新 `packages/aiops-governance-cli`，支持 schema v2、`iteration-bindings.yaml`、product/service 文件补齐和 `config-ui`。
 - 更新 VuePress 知识库文章，说明三级治理结构、迭代绑定、分支预检和 `config-ui`。
 - 保持 `install`、`init`、`setup` 幂等。
@@ -423,6 +423,7 @@ Hook 脚本边界：
 - 写入文档仓库的 `.aiops/diff-records/pending.md`。
 - 按治理等级调用 Claude Code 执行 `aiops-daily-doc-maintenance`，或在 Claude Code 不可用时提示当前 LLM 使用 subagent 维护。
 - 在注入或提醒中提示 canonical docs 维护必须先读取 `iteration-bindings.yaml`。
+- 在用户开始研发任务时提示可运行 `aiops-dev-context-recall`，按项目迭代、产品、微服务顺序召回 canonical docs，再核对源码证据。
 
 Hook 文件：
 
@@ -432,6 +433,8 @@ Hook 文件：
 .aiops/hooks/aiops_record_diff.py
 .aiops/hooks/aiops_trigger_maintenance.py
 ```
+
+Hook runner 在源码开发和外部用户使用阶段优先通过临时 Docker Python 容器执行 hook 脚本；当 Docker CLI、Docker daemon 或容器执行不可用时，允许降级到本机 `python3` / `python`。降级只用于继续记录和触发治理，不改变 pending 的语义，也不把 runner 降级信息追加到 `pending.md`。
 
 源码仓库不复制完整 `.aiops/`。如果源码仓库需要把 hook 事件投递到独立文档仓库，使用本机文件：
 
@@ -522,7 +525,40 @@ Maintenance direction:
 - 将原记录和处理结果追加到 `archived/YYYY-MM-DD.md`。
 - `archived/` 提交到 Git，但不参与 active governance recall、不参与维护债务计算。
 
-## 12. Semantic Maintenance
+## 12. Development Context Recall
+
+`aiops-dev-context-recall` 执行文档召回辅助研发。
+
+适用场景：
+
+- 实现功能前需要理解 PRD、架构约束或历史决策。
+- 调试 bug 前需要确认流程、接口、配置、数据模型和验证入口。
+- 评审、解释、写测试或做技术方案前需要召回项目上下文。
+- 用户明确说“先看文档”“召回文档”“按 AIOps 知识库辅助研发”。
+
+执行顺序：
+
+1. 检查 `.aiops/governance.yaml`。
+2. 读取 `.aiops/projects/<project>/project.yaml`。
+3. 读取 `.aiops/projects/<project>/iteration-bindings.yaml`。
+4. 识别当前研发任务对应的项目迭代、产品和微服务。
+5. 读取项目迭代文档：`iterations/<project-iteration>/`。
+6. 读取相关产品文档：`products/<product>/{prd,architecture,specs,workflows,adr}/`。
+7. 读取相关微服务文档：`products/<product>/services/<service>/{architecture,specs,workflows,adr}/`。
+8. 读取 `open-questions.md`。
+9. 必要时读取 `guides/docs/` 作为人类阅读层，但不把 guides 当事实源。
+10. 回到源码、测试、配置、迁移、manifest 和已有文档核验证据。
+
+服务级研发任务必须执行分支预检：从 `iteration-bindings.yaml` 读取服务 `code_root` 和 `required_branch`，再检查源码仓库当前分支。当前分支不一致时，不静默把 canonical docs 当作本地分支现状；agent 必须说明差异，并把文档视作目标迭代上下文，或等待用户切换分支/确认继续。
+
+输出要求：
+
+- 简要列出项目迭代、产品、微服务和分支绑定。
+- 列出本次研发最相关的 PRD、architecture、specs、ADR、workflow 约束。
+- 列出下一步要读的源码路径或验证命令。
+- 不修改 canonical docs；如发现文档漂移，等代码任务结束后由 hook 记录或转入 `aiops-daily-doc-maintenance`。
+
+## 13. Semantic Maintenance
 
 `aiops-daily-doc-maintenance` 执行语义维护。
 
@@ -575,7 +611,7 @@ Maintenance direction:
 - 不创建 `cross/`、`integration.yaml` 或独立跨域版本矩阵。
 - 修改后归档处理过的 pending section。
 
-## 13. Guides Site
+## 14. Guides Site
 
 每个 project 自带一个最小 VuePress guides 站点。
 
@@ -607,9 +643,9 @@ guides/docs/products/
 guides/docs/services/
 ```
 
-## 14. Skill Changes
+## 15. Skill Changes
 
-### 14.1 `aiops-governance-bootstrap`
+### 15.1 `aiops-governance-bootstrap`
 
 职责：
 
@@ -623,17 +659,28 @@ guides/docs/services/
 - 检测 Trellis。
 - 不覆盖已有人工维护的 canonical docs 或 YAML。
 
-### 14.2 `aiops-knowledge-lifecycle`
+### 15.2 `aiops-knowledge-lifecycle`
 
 职责：
 
-- 路由到 bootstrap、historical intake、new briefing、daily maintenance、knowledge review。
+- 路由到 bootstrap、historical intake、dev context recall、new briefing、daily maintenance、knowledge review。
 - 任何治理 skill 执行前先检查 `.aiops/governance.yaml`。
 - marker 缺失时提醒并运行 bootstrap，除非人类反对。
 - 写入或 review canonical docs 前读取 schema reference。
 - 维护 canonical docs 前读取 iteration binding 并执行分支预检。
 
-### 14.3 `aiops-historical-project-intake`
+### 15.3 `aiops-dev-context-recall`
+
+职责：
+
+- 为研发、调试、评审、解释和测试任务召回 canonical docs。
+- 读取 `project.yaml` 和 `iteration-bindings.yaml`。
+- 识别项目迭代、产品和微服务范围。
+- 对服务级任务执行 `required_branch` 预检。
+- 按项目迭代 -> 产品 -> 微服务 -> open questions -> guides -> 源码证据的顺序提供研发上下文。
+- 默认不修改 canonical docs。
+
+### 15.4 `aiops-historical-project-intake`
 
 职责：
 
@@ -644,7 +691,7 @@ guides/docs/services/
 - 不再生成旧 `00-project-card.md` 到 `09-maintenance-guide.md` 结构。
 - 不创建独立跨产品或跨服务文档层。
 
-### 14.4 `aiops-new-project-briefing`
+### 15.5 `aiops-new-project-briefing`
 
 职责：
 
@@ -652,7 +699,7 @@ guides/docs/services/
 - 初始化项目迭代、产品、服务骨架。
 - 未确认内容写入 `open-questions.md`。
 
-### 14.5 `aiops-daily-doc-maintenance`
+### 15.6 `aiops-daily-doc-maintenance`
 
 职责：
 
@@ -664,7 +711,7 @@ guides/docs/services/
 - 归档处理过的 pending records。
 - 按 governance level 决定是否 commit。
 
-### 14.6 `aiops-knowledge-review`
+### 15.7 `aiops-knowledge-review`
 
 职责：
 
@@ -675,7 +722,7 @@ guides/docs/services/
 - 检查 guides 页面是否回链 canonical docs。
 - 不要求生成 `reviews/` 目录。
 
-## 15. Implementation Order
+## 16. Implementation Order
 
 后续落地必须按以下顺序推进，不能先实现 CLI 再回补文档规则。
 
@@ -692,7 +739,7 @@ guides/docs/services/
 
 验证不得在宿主机直接运行 `npm`、`npx`、`node` 或 `python`。
 
-## 16. Acceptance Criteria
+## 17. Acceptance Criteria
 
 - `install` 重复运行不产生重复 skill。
 - `init` 从嵌套目录运行时能向上找到已有 `.aiops/`。
@@ -705,6 +752,7 @@ guides/docs/services/
 - 单产品、单微服务文档都有明确落点。
 - 外部上下游调用关系能在产品或微服务自己的文档中说明清楚。
 - LLM 能在修改 canonical docs 前输出项目迭代绑定关系。
+- LLM 能在实现、调试、评审、解释和测试任务前按 `aiops-dev-context-recall` 召回项目迭代、产品、微服务和 open questions 上下文。
 - 本地源码分支与微服务主分支不一致时默认提醒，不静默按本地分支改写 canonical docs。
 - Guides 站点仍能从项目级入口阅读项目、产品和微服务文档。
 - `.codex/hooks.json` 和 `.claude/settings.json` 只追加或更新 AIOps hook entry，重复运行不重复追加。
@@ -715,10 +763,10 @@ guides/docs/services/
 - 默认 governance level 为 `high`。
 - CLI 提供 `config-ui` 子命令，通过本地浏览器页面维护 `iteration-bindings.yaml`。
 - CLI TypeScript check/build 通过。
-- npm package name is `@makia9879/aiops`, current version is `0.1.0`, and release tag is `v0.1.0`.
+- npm package name is `@makia9879/aiops`, current version is `0.1.3`, and release tag is `v0.1.3`.
 - npm publish is driven by Docker script `scripts/publish-aiops-npm.sh` with `NPM_TOKEN` supplied from environment or CI secret.
 - Fixed external tool versions are maintained in `packages/aiops-governance-cli/src/toolchain/versions.json`.
 
-## 17. Open Questions
+## 18. Open Questions
 
 当前无阻塞确认项。实现中若发现平台 hook JSON 结构、YAML 安全补齐或 config-ui 写入边界与预期不一致，先更新本文和 ADR，再改实现。

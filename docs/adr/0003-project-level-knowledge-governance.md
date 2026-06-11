@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-The AIOps knowledge workflow must support historical project documentation, daily documentation maintenance, new project knowledge initialization, and later project maintenance by coding agents. The target projects may contain multiple products, such as CA, RA, KMC, and OCSP inside a digital certificate authentication system, and each product may contain one or more independently maintained source-code services.
+The AIOps knowledge workflow must support historical project documentation, document recall that assists coding-agent development, daily documentation maintenance, new project knowledge initialization, and later project maintenance by coding agents. The target projects may contain multiple products, such as CA, RA, KMC, and OCSP inside a digital certificate authentication system, and each product may contain one or more independently maintained source-code services.
 
 The first project-level schema organized canonical documents directly under `.aiops/projects/<project>/` as `prd/`, `architecture/`, `specs/`, `adr/`, and `workflows/`. That was enough for a first project-level governance pass, but it did not explicitly model:
 
@@ -77,14 +77,18 @@ Separate the canonical knowledge layer from the human reading layer. Canonical d
 
 Do not require per-document structured metadata or frontmatter. Canonical documents should remain Markdown-first knowledge artifacts. Maintenance recall is driven by the semantic content of pending diff records, iteration binding context, and workspace-wide search, not by mandatory structured fields on every document.
 
+Use canonical knowledge as a first-class development input, not only as a maintenance output. Before or during implementation, debugging, review, explanation, and test-writing tasks, coding agents should run a development context recall pass: read `project.yaml`, read `iteration-bindings.yaml`, identify the selected project iteration, recall relevant project/product/service canonical docs, check open questions, and verify current behavior against source evidence. When service code is in scope, the same service branch preflight applies; if the current branch differs from `required_branch`, the agent must state that mismatch and treat canonical docs as target-iteration context unless the human confirms otherwise.
+
 Use hooks as detection and governance mechanisms, not silent document writers. Codex and Claude Code hooks should call shared `.aiops/hooks/` scripts from the AIOps docs repository. Source repositories may install a local `.aiops-docs.yaml` pointer and local hook helper so source-repo hook events are delivered to the separate docs repository instead of creating an independent `.aiops/` tree. The hook scripts:
 
 - create pending records from semantically useful agent events, such as user prompts, tool results, final outputs, and subagent summaries;
-- inject pending maintenance context into agent turns;
+- inject pending maintenance context and development recall guidance into agent turns;
 - summarize likely affected project, product, and service documents;
 - remind the agent that canonical edits require iteration binding preflight;
 - ask the human whether to update documents when below threshold;
 - trigger Claude Code maintenance when pending maintenance debt exceeds governance-level thresholds.
+
+For source-development and external-user runtime, generated hook runners should prefer temporary Docker Python containers. If Docker is unavailable or the container run fails, the runner may fall back to native `python3` / `python` so governance capture continues instead of silently disappearing.
 
 Use Markdown diff records as the queue between hooks and knowledge maintenance. `.aiops/diff-records/pending.md` is the active maintenance input in the docs repository. It stores asynchronous agent trace summaries, source repository locations, source branch/head hints, touched paths, and hook output excerpts. It is not a full source diff and hooks must not try to infer complete documentation semantics. When records are handled, the maintenance executor moves handled sections to `.aiops/diff-records/archived/YYYY-MM-DD.md` with the maintenance result. Archived records are historical logs and are not part of active governance recall or maintenance-debt calculation.
 
@@ -99,6 +103,8 @@ Treat `pending.md` as semantic change input rather than an exact edit list. Duri
 7. Update the relevant canonical files and surrounding context consistently.
 8. Update guides when human-facing reading paths are affected.
 9. Commit the resulting git changes when the workflow has permission to do so.
+
+When the user is asking for code work rather than documentation maintenance, route to `aiops-dev-context-recall` before editing code. That skill should produce only the amount of context needed for the task and should not update canonical docs unless the human explicitly asks for documentation changes.
 
 Use `governance_level` presets to reduce configuration burden:
 

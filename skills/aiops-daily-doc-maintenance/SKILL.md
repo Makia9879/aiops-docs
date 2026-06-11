@@ -54,6 +54,7 @@ description: Maintains existing AIOps structured knowledge documents from code d
 - Record the project iteration, product version, service `required_branch`, and any human branch-mismatch confirmation in the maintenance summary, diff record, or commit context.
 - Hooks record semantically useful agent events and trigger Claude Code maintenance; hooks must not directly rewrite canonical docs or archive pending records themselves.
 - If source and docs are separate Git repositories, only commit the docs repository. Source repository dirty state is evidence for maintenance, not a blocker for docs-only commits.
+- Hook runners prefer temporary Docker Python containers for source-development and external-user runtime. If Docker is unavailable or container execution fails, native `python3` / `python` fallback is allowed so pending capture and maintenance triggers continue.
 - If Claude Code is unavailable, the current coding LLM should use a subagent to run this workflow from the docs repository. The fallback prompt itself should not be appended to `pending.md`.
 - Do not update docs by path alone. Always use the semantic meaning of `pending.md` to recall related context across the workspace.
 - Do not use `.aiops/diff-records/archived/` as active recall input or maintenance debt.

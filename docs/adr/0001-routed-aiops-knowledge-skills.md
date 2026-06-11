@@ -8,9 +8,10 @@ Accepted
 
 ## Context
 
-The AIOps knowledge workflow must cover three different input scenarios:
+The AIOps knowledge workflow must cover four different input scenarios:
 
 - Historical projects: existing code and docs are converted into structured knowledge.
+- Development context recall: coding agents recall structured knowledge before or during implementation, debugging, review, or explanation.
 - Daily maintenance: coding agents update existing knowledge from code changes.
 - New projects: requirements input is converted into initial structured knowledge.
 
@@ -21,6 +22,7 @@ These scenarios share evidence, schema, and review rules, but users naturally in
 Implement the workflow as multiple independently triggerable skills plus one routing skill:
 
 - `aiops-knowledge-lifecycle`
+- `aiops-dev-context-recall`
 - `aiops-historical-project-intake`
 - `aiops-daily-doc-maintenance`
 - `aiops-new-project-briefing`

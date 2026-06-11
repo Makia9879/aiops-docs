@@ -20,6 +20,7 @@ export interface InstallResult {
 }
 
 const REQUIRED_SKILLS = [
+  "aiops-dev-context-recall",
   "aiops-daily-doc-maintenance",
   "aiops-governance-bootstrap",
   "aiops-historical-project-intake",
