@@ -79,6 +79,13 @@ aiops setup --yes --project my-project
 npx -y @makia9879/aiops setup --yes --project my-project
 ```
 
+卸载运行时技能和 CLI 管理的辅助工具链：
+
+```bash
+aiops uninstall
+# 最后一行会回显：npm uninstall -g @makia9879/aiops
+```
+
 ## 了解更多
 
 - [项目概述](./knowledge/) — 四个场景、三个工具、七个技能、三个 Hook 的完整介绍

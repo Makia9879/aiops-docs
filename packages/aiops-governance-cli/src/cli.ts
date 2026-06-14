@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import { parseArgs } from "./args.js";
 import { runConfigUi } from "./config-ui.js";
-import { installSkills } from "./install.js";
+import { installSkills, uninstallSkills } from "./install.js";
 import {
   checkToolchain,
   installToolchain,
+  uninstallToolchain,
   type ToolchainCheckResult
 } from "./toolchain/toolchain.js";
 import {
@@ -35,6 +36,11 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (args.command === "uninstall") {
+    await runUninstall(args);
+    return;
+  }
+
   if (args.command === "setup") {
     await runInstall(args);
     await runInit(args);
@@ -59,6 +65,25 @@ async function main(): Promise<void> {
   }
 
   await runInit(args);
+}
+
+async function runUninstall(args: ReturnType<typeof parseArgs>): Promise<void> {
+  const skillsResult = await uninstallSkills({
+    skillsTarget: args.skillsTarget
+  });
+  const toolchainResult = await uninstallToolchain({
+    selection: args.withTools,
+    toolsRoot: args.toolsRoot
+  });
+
+  console.log(`Skills targets: ${skillsResult.targets.join(", ")}`);
+  console.log(`Skills removed: ${skillsResult.removed.length}`);
+  console.log(`Skills skipped missing: ${skillsResult.skipped.length}`);
+  console.log(`Tools root: ${toolchainResult.toolsRoot}`);
+  console.log(`Tools bin: ${toolchainResult.binRoot}`);
+  console.log(`Tools removed: ${toolchainResult.removed.length}`);
+  console.log(`Tools skipped missing: ${toolchainResult.skipped.length}`);
+  console.log("CLI uninstall command: npm uninstall -g @makia9879/aiops");
 }
 
 async function runInstall(args: ReturnType<typeof parseArgs>): Promise<void> {
@@ -214,6 +239,7 @@ function printHelp(): void {
 
 Commands:
   install              Install AIOps skills to agent runtime directories
+  uninstall            Remove AIOps skills and managed toolchain files
   init                 Initialize AIOps governance in the current workspace
   setup                Run install, then init
   config-ui            Start local UI for iteration/product/service bindings

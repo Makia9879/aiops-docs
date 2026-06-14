@@ -19,6 +19,7 @@ npx -y @makia9879/aiops <command> [options]
 ## 核心能力
 
 - `install`: 安装 AIOps 治理技能到 agent 运行时目录。
+- `uninstall`: 删除 AIOps 治理技能和 CLI 管理的辅助工具链，并回显全局 CLI 卸载命令。
 - `init`: 初始化 `.aiops/`，生成项目、产品、微服务三级知识骨架。
 - `setup`: 顺序执行 `install` 和 `init`。
 - `config-ui`: 启动本地浏览器页面，维护项目迭代、产品版本、微服务代码根和微服务主分支绑定。
@@ -80,6 +81,7 @@ aiops <command> [options]
 | 命令 | 说明 |
 | --- | --- |
 | `install` | 安装 AIOps 技能到 agent 运行时目录 |
+| `uninstall` | 删除 AIOps 技能和 CLI 管理的辅助工具链 |
 | `init` | 初始化当前工作空间的 AIOps 治理结构 |
 | `setup` | 依次执行 `install` + `init` |
 | `config-ui` | 启动本地配置 UI |
@@ -156,6 +158,22 @@ aiops install --with none
 
 默认会先检查固定版本工具链，输出每个工具的期望版本、当前版本和缺失项。交互式终端会提示是否由安装程序自动补齐；非交互环境必须传 `--yes` 才自动补齐；可用 `--with none` 跳过工具链。
 
+### uninstall
+
+```bash
+aiops uninstall
+```
+
+该命令删除默认运行时目录中的 7 个 AIOps 技能，并删除 CLI 管理的固定版本辅助工具链目录和 shim。它不删除当前工作空间的 `.aiops/` 项目知识数据。
+
+最后一行 stdout 会回显卸载全局 CLI 自身的方法：
+
+```text
+CLI uninstall command: npm uninstall -g @makia9879/aiops
+```
+
+可用 `--skills-target` 覆盖技能目标目录，用 `--tools-root` 覆盖工具链根目录，用 `--with none` 只卸载技能。
+
 ## 选项
 
 | 选项 | 默认值 | 说明 |
@@ -189,6 +207,6 @@ docker run --rm -v "$PWD":/repo -w /repo/packages/aiops-governance-cli node:24-b
 
 ## 发布
 
-当前版本：`0.1.3`，发布标签：`v0.1.3`。
+当前版本：`0.1.5`，发布标签：`v0.1.5`。
 
 发布脚本 `scripts/publish-aiops-npm.sh` 在 `node:24-bookworm` 容器内运行，`NPM_TOKEN` 从环境变量或 CI secret 提供。

@@ -143,6 +143,10 @@ npx -y @makia9879/aiops setup --yes --project my-project
 # 仅安装技能（不初始化工作空间）
 aiops install
 
+# 卸载运行时技能和 CLI 管理的辅助工具链
+aiops uninstall
+# 最后一行会回显：npm uninstall -g @makia9879/aiops
+
 # 仅初始化工作空间（不安装技能）
 aiops init --yes --project my-app
 

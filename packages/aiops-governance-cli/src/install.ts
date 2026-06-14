@@ -19,7 +19,17 @@ export interface InstallResult {
   skipped: string[];
 }
 
-const REQUIRED_SKILLS = [
+export interface UninstallSkillsOptions {
+  skillsTarget?: string;
+}
+
+export interface UninstallSkillsResult {
+  targets: string[];
+  removed: string[];
+  skipped: string[];
+}
+
+export const REQUIRED_SKILLS = [
   "aiops-dev-context-recall",
   "aiops-daily-doc-maintenance",
   "aiops-governance-bootstrap",
@@ -69,6 +79,33 @@ export async function installSkills(options: InstallOptions): Promise<InstallRes
     targets,
     installed,
     updated,
+    skipped
+  };
+}
+
+export async function uninstallSkills(
+  options: UninstallSkillsOptions = {}
+): Promise<UninstallSkillsResult> {
+  const targets = resolveSkillsTargets(options.skillsTarget);
+  const removed: string[] = [];
+  const skipped: string[] = [];
+
+  for (const targetRoot of targets) {
+    for (const skillName of REQUIRED_SKILLS) {
+      const target = path.join(targetRoot, skillName);
+      if (!(await exists(target))) {
+        skipped.push(target);
+        continue;
+      }
+
+      await rm(target, { recursive: true, force: true });
+      removed.push(target);
+    }
+  }
+
+  return {
+    targets,
+    removed,
     skipped
   };
 }

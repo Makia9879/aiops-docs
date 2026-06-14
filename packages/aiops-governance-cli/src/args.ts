@@ -1,5 +1,5 @@
 export interface ParsedArgs {
-  command: "install" | "init" | "setup" | "config-ui" | "link-docs" | "help";
+  command: "install" | "uninstall" | "init" | "setup" | "config-ui" | "link-docs" | "help";
   yes: boolean;
   project?: string;
   products?: string;
@@ -250,6 +250,7 @@ function parseCommand(value: string | undefined): ParsedArgs["command"] {
 
   if (
     value === "install" ||
+    value === "uninstall" ||
     value === "init" ||
     value === "setup" ||
     value === "config-ui" ||

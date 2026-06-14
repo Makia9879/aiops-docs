@@ -1,5 +1,5 @@
 import { constants } from "node:fs";
-import { access, chmod, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { access, chmod, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -27,6 +27,18 @@ export interface ToolchainInstallResult {
   updated: string[];
   skipped: string[];
   shims: string[];
+}
+
+export interface ToolchainUninstallOptions {
+  selection?: string;
+  toolsRoot?: string;
+}
+
+export interface ToolchainUninstallResult {
+  toolsRoot: string;
+  binRoot: string;
+  removed: string[];
+  skipped: string[];
 }
 
 export type ToolchainCheckStatus = "ready" | "missing" | "version-mismatch" | "incomplete";
@@ -151,6 +163,46 @@ export async function installToolchain(
     updated,
     skipped,
     shims
+  };
+}
+
+export async function uninstallToolchain(
+  options: ToolchainUninstallOptions
+): Promise<ToolchainUninstallResult> {
+  const selected = parseToolSelection(options.selection);
+  const { toolsRoot, binRoot } = resolveToolchainRoots(options.toolsRoot);
+  const removed: string[] = [];
+  const skipped: string[] = [];
+
+  for (const tool of selected.map(resolveTool)) {
+    const toolBaseRoot = path.join(toolsRoot, tool.name);
+    if (await exists(toolBaseRoot)) {
+      await rm(toolBaseRoot, { recursive: true, force: true });
+      removed.push(toolBaseRoot);
+    } else {
+      skipped.push(toolBaseRoot);
+    }
+
+    if (tool.bin) {
+      const shimPath = path.join(binRoot, tool.bin);
+      if (await exists(shimPath)) {
+        await rm(shimPath, { force: true });
+        removed.push(shimPath);
+      } else {
+        skipped.push(shimPath);
+      }
+    }
+  }
+
+  if (selected.length === 0) {
+    skipped.push("toolchain: disabled by --with none");
+  }
+
+  return {
+    toolsRoot,
+    binRoot,
+    removed,
+    skipped
   };
 }
 

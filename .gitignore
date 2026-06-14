@@ -3,3 +3,6 @@ headroom/
 jzero/
 Understand-Anything/
 Trellis/
+.aiops/local/**
+.aiops/cache/**
+.aiops/tmp/**

@@ -29,6 +29,7 @@ aiops <command> [options]
 | 命令 | 作用 | 修改项目文件 |
 |-----|------|------------|
 | `install` | 安装 AIOps 技能到 agent 运行时目录 | 不修改 |
+| `uninstall` | 删除 AIOps 技能和 CLI 管理的辅助工具链 | 不修改 |
 | `init` | 在当前项目初始化知识治理结构 | 修改 |
 | `setup` | 先 `install` 再 `init` | 修改 |
 | `config-ui` | 启动本地页面维护迭代绑定配置 | 修改 |
@@ -70,6 +71,44 @@ aiops install --with codegraph,trellis
 
 # 从指定目录安装技能（开发调试用）
 aiops install --skills-source /path/to/skills
+```
+
+## uninstall
+
+删除由 CLI 安装到本机运行时目录的 AIOps 技能和辅助工具链，不删除当前工作空间的 `.aiops/` 项目知识数据。
+
+```bash
+aiops uninstall [options]
+```
+
+**卸载了什么：**
+
+- 7 个 AIOps 治理技能：默认从 `~/.agents/skills/` 和 `~/.codex/skills/` 删除
+- CLI 管理的固定版本辅助工具链目录：默认从 `~/.aiops/tools/` 删除
+- CLI 管理的工具 shim：默认从 `~/.aiops/bin/` 删除
+
+**最后一行 stdout：**
+
+```text
+CLI uninstall command: npm uninstall -g @makia9879/aiops
+```
+
+这行命令只负责卸载全局安装的 CLI 包本身；如果使用的是 `npx -y @makia9879/aiops ...`，通常不需要再执行全局卸载。
+
+**常用组合：**
+
+```bash
+# 卸载默认技能和默认工具链
+aiops uninstall
+
+# 只卸载技能，不动工具链
+aiops uninstall --with none
+
+# 卸载指定运行时技能目录
+aiops uninstall --skills-target /path/to/runtime/skills
+
+# 卸载指定工具链根目录
+aiops uninstall --tools-root /path/to/.aiops/tools
 ```
 
 ## init
