@@ -4,15 +4,15 @@ Use this schema for every governed project under the current workspace. The dura
 
 ```text
 Project Iteration -> Product Version -> Service Main Branch
-Project Docs -> Product Docs -> Service Docs
+Human Reading Docs -> Source Code + Code Graphs
 ```
 
-Canonical docs are the long-lived source of truth for coding agents. Guides are the human reading layer and must link back to canonical docs.
+The old model treated Markdown canonical docs as the coding-agent fact source. The new model splits responsibilities differently:
 
-Coding agents should use canonical docs in two directions:
+- Agent evidence layer: source code, tests, configs, manifests, Git history, `codegraph`, and `understand-anything`.
+- Human reading layer: Markdown documents under `.aiops/projects/<project>/` that explain business context, architecture, workflows, ADRs, risks, and navigation.
 
-- development context recall: read project, product, and service docs before or during code work;
-- semantic maintenance: update those docs after pending code or design changes require knowledge updates.
+Do not create or maintain Markdown `specs/` directories. Code plus `codegraph` is the executable spec.
 
 ## Workspace Structure
 
@@ -21,22 +21,19 @@ Coding agents should use canonical docs in two directions:
   governance.yaml
   hooks/
     aiops_inject_context.py
-    aiops_record_diff.py
-    aiops_trigger_maintenance.py
-  diff-records/
-    pending.md
-    archived/
+    aiops_push_maintenance.py
   projects/
     <project>/
       project.yaml
       iteration-bindings.yaml
       README.md
+      commit-analysis.md
       open-questions.md
 
       iterations/
         <project-iteration>/
           iteration.yaml
-          prd.md
+          overview.md
           architecture.md
           release-scope.md
           risks.md
@@ -44,17 +41,16 @@ Coding agents should use canonical docs in two directions:
       products/
         <product>/
           product.yaml
-          prd/
+          overview.md
           architecture/
           workflows/
-          specs/
           adr/
 
           services/
             <service>/
               service.yaml
+              overview.md
               architecture/
-              specs/
               workflows/
               adr/
 
@@ -79,34 +75,66 @@ Coding agents should use canonical docs in two directions:
 ## Workspace Governance Files
 
 - `.aiops/governance.yaml`: shared workspace governance config. Keep it versionable and free of machine-local absolute paths.
-- `.aiops/diff-records/pending.md`: active Markdown record of semantic change signals. It is input for maintenance, not an exact edit list.
-- `.aiops/diff-records/archived/`: committed audit history after records are handled. Do not use it as active maintenance debt.
-- `.aiops/hooks/`: Codex and Claude Code hook scripts. Hooks record, remind, and trigger maintenance; they never rewrite canonical docs directly and never switch Git branches.
+- `.aiops/hooks/`: Codex, Claude Code, and Git hook helper scripts. Hooks start maintenance processes; they never rewrite human reading docs directly and never switch Git branches.
 - `.aiops/local/`, `.aiops/cache/`, `.aiops/tmp/`: local ignored state. Do not treat these as governed knowledge.
 
 ## Project Files
 
-- `project.yaml`: schema v2 project identity, governance level, language, product registry, canonical paths, and tool statuses. It does not store per-iteration branch bindings.
-- `iteration-bindings.yaml`: selected project iterations, docs branches, product versions, service code roots, and service required branches. Read this before modifying canonical docs.
-- `README.md`: navigation index for agents and humans. Keep it short; link to canonical docs and guides.
+- `project.yaml`: schema v2 project identity, governance level, language, product registry, reading paths, and tool statuses. It does not store per-iteration branch bindings.
+- `iteration-bindings.yaml`: selected project iterations, docs branches, product versions, service code roots, and service required branches. Read this before modifying human reading docs or interpreting source evidence.
+- `README.md`: navigation index for humans and agents. Keep it short; link to reading docs, graph outputs, and source roots.
+- `commit-analysis.md`: append-only or table-based maintenance cursor. It records analyzed commit hash, commit time, source repo, source branch, product/service, and maintenance result. Claude Code updates it after each successfully analyzed commit.
 - `open-questions.md`: unknowns, weak evidence, assumptions, branch mismatch confirmations, and decisions needing human confirmation.
-- `iterations/`: project-level iteration documents.
-- `products/`: product-level documents and service subtrees.
-- `guides/`: project-local VuePress site for human reading. It mirrors and explains canonical knowledge, but canonical governance remains under `iterations/` and `products/`.
+- `iterations/`: project-level human reading documents.
+- `products/`: product-level and service-level human reading documents.
+- `guides/`: project-local VuePress site for human reading. It presents the same reading layer as a site.
 
 ## Development Context Recall
 
 For implementation, debugging, review, explanation, and test-writing tasks, recall context in this order:
 
 1. `project.yaml` and `iteration-bindings.yaml`.
-2. Selected `iterations/<project-iteration>/` docs.
-3. Relevant `products/<product>/` canonical docs.
-4. Relevant `products/<product>/services/<service>/` canonical docs.
+2. Selected `iterations/<project-iteration>/` reading docs.
+3. Relevant `products/<product>/` reading docs.
+4. Relevant `products/<product>/services/<service>/` reading docs.
 5. `open-questions.md`.
-6. `guides/docs/` only as a reading layer.
-7. Source code, tests, configs, migrations, manifests, and existing docs as evidence.
+6. Source code, tests, configs, migrations, manifests, and existing docs.
+7. `codegraph` callers, callees, impact, and symbol search.
+8. `understand-anything` architecture, domain, and tour graphs when present.
+9. `guides/docs/` only when a rendered onboarding path is useful.
 
-Before service-level code changes, compare the service `code_root` current branch with the selected iteration `required_branch`. If they differ, report the mismatch and use canonical docs as target-iteration context only after human confirmation.
+Human reading docs provide business context and navigation. Source and graph evidence provide implementation facts. If they disagree, prefer source and graph evidence, then route the drift to maintenance.
+
+Before service-level code changes, compare the service `code_root` current branch with the selected iteration `required_branch`. If they differ, report the mismatch and treat reading docs as target-iteration context only after human confirmation.
+
+## Push Hook Maintenance
+
+Daily maintenance is no longer based on `pending.md` or governance thresholds. It runs from Git push:
+
+1. A developer finishes code work and creates a Git commit.
+2. The developer starts `git push`.
+3. The repository push hook runs the AIOps maintenance launcher.
+4. The launcher starts a Claude Code process in the docs workspace with the selected project, source repo, source branch, and pushed commit range.
+5. Claude Code reads `commit-analysis.md` to find the last analyzed commit for the same source repo and governed branch.
+6. Claude Code reviews unanalysed commits in commit order, starting after the recorded cursor.
+7. For each commit, Claude Code reads the diff, source context, tests/configs, and graph impact; updates the human reading layer only when human understanding changes.
+8. After each commit is successfully analyzed, Claude Code records the commit hash and commit time in `commit-analysis.md`.
+
+All maintenance remains based on the original project main branch principle:
+
+- For project docs, the docs branch must match the selected `docs_branch`.
+- For service docs, the source branch must match the service `required_branch`.
+- Pushes to feature or temporary branches do not create new document versions. They may be ignored or require explicit human confirmation before reading docs are updated.
+
+Recommended `commit-analysis.md` shape:
+
+```md
+# Commit Analysis
+
+| Source repo | Branch | Commit | Commit time | Project | Product | Service | Result |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| /path/to/service | main | abc1234 | 2026-06-16T10:30:00+08:00 | cert | ca | ca-admin | updated workflows |
+```
 
 ## Config Files
 
@@ -121,10 +149,13 @@ display_name: 数字证书认证系统
 governance_level: high
 knowledge_language: zh-CN
 
-canonical_paths:
+paths:
   iterations: iterations/
   products: products/
   guides: guides/
+  graph:
+    codegraph: .codegraph/
+    understand_anything: .understand-anything/
 
 products:
   - id: ca
@@ -139,6 +170,7 @@ Rules:
 - Keep project ids and product ids stable.
 - Do not store local temporary source branches here.
 - Use `products[].services` as the service registry, not as a service version list.
+- Tool paths are navigation hints, not a replacement for running fresh graph queries when implementation accuracy matters.
 
 ### `iteration-bindings.yaml`
 
@@ -201,14 +233,14 @@ docs_path: products/ca/services/ca-admin
 
 Do not record the local current branch in `service.yaml`.
 
-## Project Iteration Docs
+## Project Iteration Reading Docs
 
 Project-level documents describe the delivery iteration, shared architecture, product scope, common constraints, and project-level risks:
 
 ```text
 iterations/<project-iteration>/
   iteration.yaml
-  prd.md
+  overview.md
   architecture.md
   release-scope.md
   risks.md
@@ -222,17 +254,16 @@ Use this level for:
 - project-level deployment, integration, and delivery rhythm;
 - project-level risks and open questions.
 
-## Product Docs
+## Product Reading Docs
 
 Product-level documents describe product versions, product capabilities, product-internal architecture, product workflows, and product service boundaries:
 
 ```text
 products/<product>/
   product.yaml
-  prd/
+  overview.md
   architecture/
   workflows/
-  specs/
   adr/
   services/
 ```
@@ -244,32 +275,36 @@ Use this level for:
 - service boundaries inside the product;
 - product-level data flow and capability composition;
 - product-level external upstream or downstream calls;
-- product-level ADRs.
+- product-level ADRs;
+- navigation to source roots and graph queries that show contracts or call paths.
 
-## Service Docs
+## Service Reading Docs
 
-Service-level documents describe one source-code service:
+Service-level documents describe one source-code service at human reading granularity:
 
 ```text
 products/<product>/services/<service>/
   service.yaml
+  overview.md
   architecture/
-  specs/
   workflows/
   adr/
 ```
 
 Use this level for:
 
-- service entry points, routes, handlers, logic, models, and config;
-- API contracts, RPC contracts, database tables, message protocols, and extension contracts;
+- service responsibility and ownership;
+- runtime role, entry areas, and major dependencies;
 - service-internal business workflows;
 - external upstream or downstream calls initiated or owned by this service;
-- service-level ADRs and regression validation commands.
+- service-level ADRs;
+- graph/source navigation for API, RPC, config, database, message, validation, and extension details.
+
+Do not duplicate implementation contracts into Markdown specs. Link to source paths, graph queries, tests, and generated graph outputs instead.
 
 ## Iteration Binding Preflight
 
-Before modifying canonical docs:
+Before modifying human reading docs:
 
 1. Identify the affected project, product, service, and project iteration.
 2. Read `.aiops/projects/<project>/project.yaml`.
@@ -277,20 +312,22 @@ Before modifying canonical docs:
 4. Read relevant `product.yaml` and `service.yaml` files.
 5. For project iteration docs, confirm the docs repo branch matches `iterations[].docs_branch`, or get human confirmation.
 6. For service docs, run `git -C <code_root> branch --show-current` and compare it to `required_branch`.
+7. Inspect latest relevant commits and graph impact before updating reading docs.
 
-If a service's current branch differs from `required_branch`, default to no canonical edits. Only:
+If a service's current branch differs from `required_branch`, default to no reading-doc edits. Only:
 
 - remind the human to switch source branches;
-- write or preserve the pending diff record;
+- do not advance `commit-analysis.md` for the blocked commit;
 - write an open question;
 - continue after explicit human confirmation, recording the reason.
 
 ## External Upstream And Downstream Calls
 
-Do not create a separate cross-domain documentation layer. External relationships belong in the current product or service docs:
+Do not create a separate cross-domain documentation layer. External relationships belong in the current product or service reading docs:
 
-- The caller or dependency owner documents the call entry point, protocol, responsibility boundary, error semantics, and validation path.
-- The called product or service docs are supporting evidence for interface and behavior facts.
+- The caller or dependency owner documents the business relationship, ownership boundary, and where to inspect the implementation.
+- The called product or service docs are supporting reading context.
+- Source code and graph queries are the evidence for call entry point, protocol, error semantics, and validation path.
 - Do not create `cross/`, `integration.yaml`, or an independent cross-product or cross-service version matrix.
 
 ## Guides Site
@@ -312,25 +349,25 @@ Default human-facing pages:
 - `guides/docs/products/`
 - `guides/docs/services/`
 
-Guides pages should link back to canonical docs and must not carry the only copy of a business rule.
+Guides pages are part of the human reading layer. They can reorganize the same content for onboarding and navigation, but they must not replace source and graph evidence for implementation details.
 
 ## Section Pattern
 
-Use this compact pattern inside canonical Markdown files when useful:
+Use this compact pattern inside human reading Markdown files when useful:
 
 ```md
 ## <Topic>
 
-Summary: <one or two factual sentences>
+Summary: <one or two human-readable sentences>
 
-Evidence:
-- <path>: <what it proves>
+Source and graph evidence:
+- <path or graph query>: <what it helps verify>
 
-Agent notes:
-- <how to use this when changing code or docs>
+Reading notes:
+- <how a human or agent should use this when navigating the project>
 
 Open questions:
 - <only if needed>
 ```
 
-Skip empty sections. Keep documents dense, source-backed, and coding-agent-friendly. Human narrative belongs in `guides/docs/`.
+Skip empty sections. Keep documents dense, source-backed, and human-readable. Use source code plus `codegraph` / `understand-anything` for executable details.

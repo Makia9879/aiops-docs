@@ -121,7 +121,7 @@ aiops init [options]
 
 **生成了什么：**
 
-- `.aiops/` 目录（governance.yaml、hooks/、projects/、diff-records/ 等）
+- `.aiops/` 目录（governance.yaml、hooks/、projects/ 等）
 - `.aiops/projects/<project>/` 项目知识骨架
 - `.aiops/projects/<project>/iteration-bindings.yaml` 迭代绑定配置
 - `.claude/settings.json` 和 `.codex/hooks.json` Hook 配置（追加式写入，不覆盖已有内容）
@@ -173,7 +173,7 @@ aiops config-ui --project certificate-system
 aiops link-docs --docs-repo ../aiops-docs
 ```
 
-该命令只在源码仓库写入本机文件 `.aiops-docs.yaml` 和 `.aiops-hook-runner.sh`，并加入 `.gitignore`。源码仓库不复制完整 `.aiops/`；hook 事件投递到文档仓库 `.aiops/diff-records/pending.md`。
+该命令只在源码仓库写入本机文件 `.aiops-docs.yaml`、`.aiops-hook-runner.sh`，并安装本机 `.git/hooks/pre-push`。源码仓库不复制完整 `.aiops/`；push hook 会定位文档仓库并启动 Claude Code 分析未处理提交，进度记录在文档仓库 `.aiops/projects/<project>/commit-analysis.md`。
 
 ## 选项表
 

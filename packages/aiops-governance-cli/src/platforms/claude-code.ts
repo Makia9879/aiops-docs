@@ -9,6 +9,11 @@ import { aiopsHookCommand } from "./hook-command.js";
 
 const CLAUDE_SETTINGS_PATH = ".claude/settings.json";
 const AIOPS_MARKER = "aiops-governance";
+const OBSOLETE_AIOPS_HOOK_IDS = new Set([
+  "aiops-governance-record-diff",
+  "aiops-governance-record-subagent",
+  "aiops-governance-trigger-maintenance",
+]);
 
 export interface ClaudeHookCommand {
   readonly id: string;
@@ -22,29 +27,12 @@ export const CLAUDE_CODE_AIOPS_HOOKS: Readonly<Record<string, ClaudeHookCommand[
       command: aiopsHookCommand("claude-code", "inject", "UserPromptSubmit"),
     },
   ],
-  PostToolUse: [
-    {
-      id: "aiops-governance-record-diff",
-      command: aiopsHookCommand("claude-code", "record", "PostToolUse"),
-    },
-  ],
-  SubagentStop: [
-    {
-      id: "aiops-governance-record-subagent",
-      command: aiopsHookCommand("claude-code", "record", "SubagentStop"),
-    },
-  ],
-  Stop: [
-    {
-      id: "aiops-governance-trigger-maintenance",
-      command: aiopsHookCommand("claude-code", "trigger", "Stop"),
-    },
-  ],
 };
 
 export function appendClaudeCodeAiopsHooks(existingText = ""): string {
   const settings = parseJsonObject(existingText, CLAUDE_SETTINGS_PATH);
   const hooks = ensureObject(settings, "hooks");
+  removeObsoleteClaudeHooks(hooks);
 
   for (const [eventName, commands] of Object.entries(CLAUDE_CODE_AIOPS_HOOKS)) {
     const eventEntries = ensureArray(hooks, eventName);
@@ -54,6 +42,28 @@ export function appendClaudeCodeAiopsHooks(existingText = ""): string {
   }
 
   return stringifyJsonObject(settings);
+}
+
+function removeObsoleteClaudeHooks(hooks: JsonObject): void {
+  for (const [eventName, value] of Object.entries(hooks)) {
+    if (!Array.isArray(value)) {
+      continue;
+    }
+
+    hooks[eventName] = value.filter((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+        return true;
+      }
+
+      const text = JSON.stringify(entry);
+      for (const id of OBSOLETE_AIOPS_HOOK_IDS) {
+        if (text.includes(id)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
 }
 
 function appendClaudeEntry(entries: unknown[], command: ClaudeHookCommand): void {

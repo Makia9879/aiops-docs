@@ -2,6 +2,10 @@
 
 Date: 2026-06-09
 
+Status: Partially superseded by `docs/adr/0004-human-reading-layer-and-graph-backed-agent-facts.md` and `docs/adr/0005-push-hook-commit-analysis-maintenance.md`.
+
+Note: This spec remains useful for install/init/setup, hooks, governance levels, and iteration binding. Its canonical-docs-as-agent-fact-source model, PRD/specs-centered recall, `specs/` directories, and pending/threshold maintenance flow are no longer the current target design.
+
 ## 1. 原始场景与目标
 
 将当前 AIOps skills 从“提示词式文档生成流程”升级为一套 workspace 级项目知识库治理系统，并把文档结构从第一版“项目 -> product domain”升级为：

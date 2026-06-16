@@ -2,6 +2,10 @@
 
 Date: 2026-06-09
 
+Status: Partially superseded by `docs/adr/0004-human-reading-layer-and-graph-backed-agent-facts.md` and `docs/adr/0005-push-hook-commit-analysis-maintenance.md`.
+
+Note: This document remains useful for the project -> product -> service and iteration-binding model. Its canonical-docs-as-agent-fact-source model, `specs/` directories, and pending/threshold maintenance flow are no longer the target design. The current target is human reading docs backed by source code, CodeGraph, Understand Anything, and push-hook commit analysis.
+
 ## 1. 目标与范围
 
 本 spec 记录 AIOps 文档治理结构的下一轮调整：把当前“项目 -> 产品域”的文档模型细化为“项目 -> n 个产品 -> n 个微服务”，并把文档维护锚定到项目迭代。

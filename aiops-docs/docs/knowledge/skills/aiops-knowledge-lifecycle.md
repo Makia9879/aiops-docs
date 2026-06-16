@@ -31,7 +31,7 @@
 |--------------|----------------|
 | "整理""入库""历史""老项目" | `aiops-historical-project-intake` |
 | "开发""调试""评审""解释""测试""召回""辅助研发" | `aiops-dev-context-recall` |
-| "更新""维护""同步""pending" | `aiops-daily-doc-maintenance` |
+| "更新""维护""同步""git push""提交分析" | `aiops-daily-doc-maintenance` |
 | "新建""初始化""新项目""briefing" | `aiops-new-project-briefing` |
 | "审查""检查""review""质量" | `aiops-knowledge-review` |
 | "安装""init""setup""bootstrap" | `aiops-governance-bootstrap` |
@@ -46,7 +46,7 @@
 
 不管路由到哪个子技能，它们都共享同一套基础资源：
 
-- **文档结构规范**：五类文档（PRD/Architecture/Specs/ADR/Workflows）的写法约定
-- **证据规则**：怎么判断一个说法是否可以写入 canonical 文档
+- **文档结构规范**：项目、产品、微服务阅读层的写法约定
+- **证据规则**：怎么判断一个说法是否可以写入人类阅读层
 - **审查清单**：文档质量检查项
 - **工具链**：CodeGraph、Understand Anything、Trellis 的使用约定

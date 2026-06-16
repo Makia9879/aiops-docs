@@ -1,6 +1,6 @@
 # 项目、产品、微服务三级结构
 
-AIOps 文档治理的目标结构从“项目 -> 产品域”升级为“项目 -> 产品 -> 微服务”。这个规则来自 `docs/spec-aiops-branch-bound-document-structure.md`，并延续 `CONTEXT.md`、`docs/adr/0003-project-level-knowledge-governance.md` 中已经确认的项目级知识根：`.aiops/projects/<project>/`。
+AIOps 文档治理仍按“项目 -> 产品 -> 微服务”组织，但语义发生变化：这些 Markdown 文档是人类阅读层，不再是 agent 的实现事实源。Agent 需要实现事实时，应回到源码、测试、配置、CodeGraph 和 Understand Anything。
 
 ## 结构总览
 
@@ -10,35 +10,42 @@ AIOps 文档治理的目标结构从“项目 -> 产品域”升级为“项目 
 .aiops/projects/<project>/
   project.yaml
   iteration-bindings.yaml
+  README.md
+  open-questions.md
   iterations/
+    <project-iteration>/
+      iteration.yaml
+      overview.md
+      architecture.md
+      release-scope.md
+      risks.md
   products/
     <product>/
       product.yaml
-      prd/
+      overview.md
       architecture/
       workflows/
-      specs/
       adr/
       services/
         <service>/
           service.yaml
+          overview.md
           architecture/
-          specs/
           workflows/
           adr/
   guides/
 ```
 
-项目、产品、微服务是三级递进的治理层次，都归属同一个项目知识根，维护结果仍提交到项目级文档 repo。
+旧模型中的 `specs/` 被移除。接口、配置、协议、数据结构、调用链和验证入口由源码与图谱召回。
 
-## 项目级文档
+## 项目级阅读文档
 
 项目级文档描述本项目的迭代、全局架构、产品范围和共同约束。典型落点是：
 
 ```text
 iterations/<project-iteration>/
   iteration.yaml
-  prd.md
+  overview.md
   architecture.md
   release-scope.md
   risks.md
@@ -51,17 +58,16 @@ iterations/<project-iteration>/
 - 产品范围、共同约束、部署和集成节奏。
 - 项目级风险、未决问题和交付边界。
 
-## 产品级文档
+## 产品级阅读文档
 
 产品是项目下的一级治理对象。产品级文档描述产品版本、产品内能力、产品内微服务划分，以及对外部上下游产品的责任边界。
 
 ```text
 products/<product>/
   product.yaml
-  prd/
+  overview.md
   architecture/
   workflows/
-  specs/
   adr/
   services/
 ```
@@ -72,33 +78,45 @@ products/<product>/
 - 产品级用户流程。
 - 产品内微服务边界。
 - 产品内数据流和能力组合。
-- 产品对外部上下游的调用入口、责任边界和依赖假设。
+- 产品对外部上下游的业务责任边界。
 - 产品级 ADR。
+- 指向源码、图谱或测试的导航线索。
 
-## 微服务级文档
+## 微服务级阅读文档
 
-微服务是产品下的二级治理对象。微服务级文档描述单个代码服务的接口、模型、运行形态、业务规则和维护入口。
+微服务是产品下的二级治理对象。微服务级文档描述单个代码服务的职责、运行角色、关键流程和决策。
 
 ```text
 products/<product>/services/<service>/
   service.yaml
+  overview.md
   architecture/
-  specs/
   workflows/
   adr/
 ```
 
 微服务级文档适合写：
 
-- 服务入口、路由、handler、logic、model、配置。
-- API contract、RPC contract、数据库表、消息协议。
+- 服务职责和所属产品能力。
+- 服务入口区域、运行形态、依赖方向和关键配置位置。
 - 服务内部业务流程。
-- 服务调用外部上下游服务的入口、协议、错误口径和验证路径。
-- 服务级 ADR 和回归验证命令。
+- 服务调用外部上下游服务的业务语义和责任边界。
+- 服务级 ADR。
+- 建议使用的 CodeGraph / Understand Anything 查询入口。
 
-## Guides 仍是阅读层
+不适合写：
 
-`guides/` 仍是面向人类的阅读层，不按每个产品或微服务单独拆站点。它可以按阅读路径重组内容，但必须回链 canonical docs，不能承载唯一业务规则。
+- API 参数完整清单。
+- RPC contract 全量字段。
+- 数据库字段逐项说明。
+- 配置项逐项说明。
+- 函数级执行细节。
+
+这些实现细节以源码和图谱为准。
+
+## Guides 是站点呈现
+
+`guides/` 仍是面向人类的 VuePress 站点，不按每个产品或微服务单独拆站点。它可以按阅读路径重组内容，但不替代源码和图谱事实。
 
 ```text
 guides/docs/
@@ -110,7 +128,7 @@ guides/docs/
   services/
 ```
 
-维护时先改 canonical docs；当项目定位、主要流程、产品边界、服务入口或交付路径影响人类理解时，再同步更新 guides。
+维护时先更新 `.aiops/projects/<project>/` 下的人类阅读层；当项目定位、主要流程、产品边界、服务入口或交付路径影响上手体验时，再同步更新 guides。
 
 ## 外部上下游关系
 
@@ -118,9 +136,9 @@ guides/docs/
 
 检索顺序是：
 
-1. 先读当前产品或微服务自己的 canonical docs。
-2. 从当前文档中的外部上下游说明定位对方产品或服务。
-3. 再读取对方自己的 canonical docs 作为接口和行为事实补充。
-4. 如果当前文档没有说明外部调用关系，先补当前文档，把调用入口、协议、责任边界、错误口径和验证路径写清楚。
+1. 先读当前产品或微服务自己的阅读文档，了解业务语义和责任边界。
+2. 从当前文档中的外部上下游说明定位对方产品、服务和源码根。
+3. 用 CodeGraph / Understand Anything / 源码确认调用入口、协议、错误口径和验证路径。
+4. 如果当前文档没有说明外部调用关系，维护阅读层，把业务语义和图谱导航补清楚。
 
 这个规则避免产生独立的 `cross/`、`integration.yaml` 或跨域版本矩阵，也避免让上下游关系脱离拥有业务语义的一方。

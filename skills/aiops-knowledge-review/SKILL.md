@@ -1,6 +1,6 @@
 ---
 name: aiops-knowledge-review
-description: Reviews AIOps structured knowledge bases for schema coverage, evidence quality, terminology consistency, and coding-agent usability. Use when the user asks to audit, validate, improve, or quality-check project knowledge docs.
+description: Reviews AIOps human reading layers for schema coverage, evidence quality, terminology consistency, graph/source navigation, and coding-agent usability. Use when the user asks to audit, validate, improve, or quality-check project knowledge docs.
 ---
 
 # Knowledge Review
@@ -17,6 +17,7 @@ description: Reviews AIOps structured knowledge bases for schema coverage, evide
    - products are represented when the project has sub-products.
    - each product lists its services.
    - `iteration-bindings.yaml` exists.
+   - `commit-analysis.md` exists or there is a documented reason maintenance has not started.
    - `README.md` is an index/navigation page, not a long article.
    - `guides/` exists for human reading.
 6. Check iteration binding completeness:
@@ -29,26 +30,29 @@ description: Reviews AIOps structured knowledge bases for schema coverage, evide
 7. Check branch-bound maintenance risk:
    - for each service with a reachable `code_root`, compare `git -C <code_root> branch --show-current` with `required_branch`;
    - report mismatches as review findings;
-   - verify prior mismatch confirmations, pending records, or open questions exist when docs were changed despite a mismatch.
-8. Check canonical coverage:
+   - verify prior mismatch confirmations or open questions exist when docs were changed despite a mismatch;
+   - verify branch-mismatched commits were not incorrectly advanced in `commit-analysis.md`.
+8. Check human reading coverage:
    - project iteration docs under `iterations/<project-iteration>/`;
-   - product docs under `products/<product>/{prd,architecture,specs,adr,workflows}/`;
-   - service docs under `products/<product>/services/<service>/{architecture,specs,workflows,adr}/`;
+   - product docs under `products/<product>/{overview.md,architecture,adr,workflows}/`;
+   - service docs under `products/<product>/services/<service>/{overview.md,architecture,workflows,adr}/`;
    - `product.yaml` for each product;
    - `service.yaml` for each service;
    - `open-questions.md`.
+   - no product or service `specs/` directories.
 9. Check external upstream/downstream documentation:
-   - relationship facts live in the current product or service canonical docs;
-   - call entry point, protocol, responsibility boundary, error semantics, and validation path are explicit when evidence exists;
+   - business relationship context lives in the current product or service reading docs;
+   - source and graph navigation exists for call entry point, protocol, error semantics, and validation path when evidence exists;
    - no `cross/`, `integration.yaml`, or independent cross-product/service matrix is introduced.
 10. Check evidence:
    - claims cite source paths or are labelled as assumptions;
    - stale paths are detected;
    - code/docs contradictions are called out.
 11. Check agent usability:
-   - entry points and impact areas are explicit;
+   - reading docs explain business context before implementation details;
+   - source and graph entry points are explicit;
    - maintenance rules are actionable;
-   - validation commands are present where applicable.
+   - validation command locations are discoverable from source, graph, or tests where applicable.
 12. Check human readability:
    - `guides/docs/overview.md` explains the project;
    - `guides/docs/onboarding.md` helps a developer start;

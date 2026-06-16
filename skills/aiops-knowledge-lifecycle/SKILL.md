@@ -9,7 +9,7 @@ description: Routes AIOps knowledge-base work across historical project intake, 
 
 Manage workspace-level AIOps knowledge governance. The governed object is the whole workspace, with project knowledge stored under `.aiops/projects/<project>/`.
 
-The canonical structure is project -> product -> service:
+The human reading structure is project -> product -> service:
 
 - project iteration docs live under `.aiops/projects/<project>/iterations/<project-iteration>/`;
 - product docs live under `.aiops/projects/<project>/products/<product>/`;
@@ -18,15 +18,15 @@ The canonical structure is project -> product -> service:
 The lifecycle covers:
 
 - Bootstrap: install governance structure, project skeleton, guides site, hooks, and defaults.
-- Historical project intake: existing code/docs -> canonical project knowledge.
-- Development context recall: canonical project knowledge -> coding-agent development context.
-- Daily documentation maintenance: pending semantic changes -> consistent doc updates.
-- New project briefing: requirements input -> initial canonical project knowledge.
+- Historical project intake: existing code/docs/history/graphs -> human reading layer.
+- Development context recall: human reading layer -> source and graph evidence -> coding-agent development context.
+- Daily documentation maintenance: git push hook -> unanalysed commits -> consistent reading-doc updates.
+- New project briefing: requirements input -> initial human reading layer.
 - Knowledge review: completeness, evidence, agent usability, and human readability checks.
 
-Canonical docs are Markdown-first. Do not require JSONL, per-file frontmatter, or structured metadata beyond the project/workspace config files.
+Human reading docs are Markdown-first. Do not require JSONL, per-file frontmatter, or structured metadata beyond the project/workspace config files.
 
-Project iteration binding is mandatory before maintenance. Workflows that write canonical docs must read `.aiops/projects/<project>/iteration-bindings.yaml` and maintain docs against:
+Project iteration binding is mandatory before maintenance. Workflows that write human reading docs must read `.aiops/projects/<project>/iteration-bindings.yaml` and maintain docs against:
 
 ```text
 project iteration -> product version -> service required_branch
@@ -42,9 +42,9 @@ Before running any governance workflow:
 2. If found, use that `.aiops/` as the workspace governance root.
 3. If missing, tell the human that AIOps governance is not initialized and run `aiops-governance-bootstrap`, unless the human explicitly refuses.
 4. If the user asks for `install`, `init`, or `setup`, route to `aiops-governance-bootstrap`.
-5. For any workflow that writes canonical docs, identify the project and selected project iteration, then read `project.yaml` and `iteration-bindings.yaml`.
+5. For any workflow that writes human reading docs, identify the project and selected project iteration, then read `project.yaml` and `iteration-bindings.yaml`.
 6. For service-level writes, compare each impacted service `code_root` current branch with the iteration binding `required_branch`.
-7. If a service current branch does not match `required_branch`, do not modify canonical docs by default. Remind the human to switch branches or explicitly confirm that this maintenance still belongs to the selected project iteration. Until confirmation, record the mismatch in pending records or open questions.
+7. If a service current branch does not match `required_branch`, do not modify human reading docs by default. Remind the human to switch branches or explicitly confirm that this maintenance still belongs to the selected project iteration. Until confirmation, record the mismatch in open questions and do not advance the commit-analysis cursor.
 
 Classify the user's request:
 
@@ -86,18 +86,18 @@ skills/aiops-knowledge-lifecycle/references/
 
 ## Output Rule
 
-Canonical knowledge documents are for coding agents first. Prefer concrete file paths, entry points, invariants, impact boundaries, and validation commands over broad narrative.
+Human reading documents are for people first, and for agents as business/navigation context. Prefer concise business maps, architecture boundaries, workflows, ADRs, source paths, and graph queries over implementation specs.
 
-Human-friendly reading belongs in `.aiops/projects/<project>/guides/docs/`. Keep project `README.md` as an index/navigation page, not a long article.
+Rendered human-friendly site pages belong in `.aiops/projects/<project>/guides/docs/`. Keep project `README.md` as an index/navigation page, not a long article.
 
-External upstream/downstream relationships belong in the current product or service canonical docs. Include call entry points, protocol, responsibility boundary, error semantics, and validation path where evidence exists. Do not create `cross/`, `integration.yaml`, or independent cross-product/service matrices.
+External upstream/downstream relationships belong in the current product or service reading docs. Include business responsibility and source/graph navigation; call entry points, protocols, error semantics, and validation paths are verified from source and graphs. Do not create `specs/`, `cross/`, `integration.yaml`, or independent cross-product/service matrices.
 
 ## Governance Levels
 
-- `low`: record to `.aiops/diff-records/pending.md`; do not auto-commit.
-- `medium`: record and gently remind; do not auto-commit.
-- `high`: default. Record, remind, and allow threshold-driven automatic maintenance; may auto-commit doc/governance-only changes.
-- `xhigh`: stronger governance. Trigger maintenance earlier, may block session end through hooks, and auto-commit successful doc/governance-only maintenance when safe.
+- `low`: push hook can report unanalysed commits but should not auto-run maintenance.
+- `medium`: push hook can run maintenance and ask before committing reading-doc changes.
+- `high`: default. Push hook runs Claude Code maintenance for unanalysed commits and may auto-commit doc/governance-only changes.
+- `xhigh`: stronger governance. Push hook may block push when maintenance fails or reading docs remain inconsistent.
 
 Automatic commits must never include source-code changes unless the human explicitly asks. Use:
 

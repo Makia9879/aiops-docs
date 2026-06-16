@@ -9,6 +9,11 @@ import { aiopsHookCommand } from "./hook-command.js";
 
 const CODEX_HOOKS_PATH = ".codex/hooks.json";
 const AIOPS_MARKER = "aiops-governance";
+const OBSOLETE_AIOPS_HOOK_IDS = new Set([
+  "aiops-governance-record-diff",
+  "aiops-governance-record-subagent",
+  "aiops-governance-trigger-maintenance",
+]);
 
 export interface CodexHookCommand {
   readonly id: string;
@@ -22,29 +27,12 @@ export const CODEX_AIOPS_HOOKS: Readonly<Record<string, CodexHookCommand[]>> = {
       command: aiopsHookCommand("codex", "inject", "UserPromptSubmit"),
     },
   ],
-  PostToolUse: [
-    {
-      id: "aiops-governance-record-diff",
-      command: aiopsHookCommand("codex", "record", "PostToolUse"),
-    },
-  ],
-  SubagentStop: [
-    {
-      id: "aiops-governance-record-subagent",
-      command: aiopsHookCommand("codex", "record", "SubagentStop"),
-    },
-  ],
-  Stop: [
-    {
-      id: "aiops-governance-trigger-maintenance",
-      command: aiopsHookCommand("codex", "trigger", "Stop"),
-    },
-  ],
 };
 
 export function appendCodexAiopsHooks(existingText = ""): string {
   const config = parseJsonObject(existingText, CODEX_HOOKS_PATH);
   const hooks = ensureObject(config, "hooks");
+  removeObsoleteCodexHooks(hooks);
 
   for (const [eventName, entries] of Object.entries(CODEX_AIOPS_HOOKS)) {
     const eventEntries = ensureArray(hooks, eventName);
@@ -54,6 +42,28 @@ export function appendCodexAiopsHooks(existingText = ""): string {
   }
 
   return stringifyJsonObject(config);
+}
+
+function removeObsoleteCodexHooks(hooks: JsonObject): void {
+  for (const [eventName, value] of Object.entries(hooks)) {
+    if (!Array.isArray(value)) {
+      continue;
+    }
+
+    hooks[eventName] = value.filter((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+        return true;
+      }
+
+      const text = JSON.stringify(entry);
+      for (const id of OBSOLETE_AIOPS_HOOK_IDS) {
+        if (text.includes(id)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
 }
 
 function appendCodexEntry(entries: unknown[], command: CodexHookCommand): void {

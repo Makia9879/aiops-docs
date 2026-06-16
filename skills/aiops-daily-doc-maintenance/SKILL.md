@@ -1,6 +1,6 @@
 ---
 name: aiops-daily-doc-maintenance
-description: Maintains existing AIOps structured knowledge documents from code diffs, feature work, refactors, or documentation drift. Use when the user asks a coding agent to update knowledge docs after changes, keep structured docs current, or modify only affected project knowledge sections.
+description: Maintains existing AIOps human reading documents from unanalysed Git commits during git push. Use when a push hook starts documentation maintenance, when the user asks to analyze commits and update docs, or when reading docs need to catch up with code changes.
 ---
 
 # Daily Documentation Maintenance
@@ -8,40 +8,48 @@ description: Maintains existing AIOps structured knowledge documents from code d
 ## Workflow
 
 1. Ensure workspace governance exists. If `.aiops/governance.yaml` is missing, run `aiops-governance-bootstrap` unless the human refuses.
-2. Identify the project and selected project iteration. If the iteration is unclear, ask the human before editing canonical docs.
+2. Identify the project and selected project iteration. If the iteration is unclear, ask the human before editing human reading docs.
 3. Read `.aiops/projects/<project>/project.yaml`.
-4. Read `.aiops/projects/<project>/iteration-bindings.yaml` before reading or editing canonical docs.
-5. Resolve the selected iteration into project docs branch, product versions, service `code_root`, and service `required_branch`.
-6. For service-level maintenance, check the current branch with `git -C <code_root> branch --show-current`.
-7. If `current branch != required_branch`, do not modify canonical docs by default. Tell the human:
+4. Read `.aiops/projects/<project>/iteration-bindings.yaml` before reading or editing human reading docs.
+5. Read `.aiops/projects/<project>/commit-analysis.md`. If it does not exist, create it before maintenance.
+6. Resolve the selected iteration into project docs branch, product versions, service `code_root`, and service `required_branch`.
+7. Identify the source repo and pushed branch from the push hook arguments or from the human request.
+8. Enforce the original project main-branch principle:
+   - for project docs, the docs repo branch must match `docs_branch`;
+   - for service docs, the source branch must match the service `required_branch`;
+   - feature or temporary branches do not create document versions and should be skipped unless the human explicitly confirms maintenance against the selected project iteration.
+9. Find the last analyzed commit for the same source repo and branch in `commit-analysis.md`.
+10. List unanalysed commits after that cursor, in chronological order.
+11. For each unanalysed commit:
+    - read commit hash, commit time, subject, author, changed files, and diff;
+    - inspect source code, tests, configs, manifests, migrations, and existing docs needed to understand the change;
+    - use `codegraph` callers/callees/impact and `understand-anything` when graph context helps;
+    - decide whether the human reading layer needs updates;
+    - update related reading docs consistently;
+    - record the analyzed commit hash and commit time in `commit-analysis.md` immediately after the commit is handled.
+12. Run the review checklist for changed files.
+13. Commit documentation changes when the push hook policy allows it.
 
-   ```text
-   当前 <service> 在 <current branch>，但项目迭代 <iteration> 要求 <required_branch>。
-   请切换源码分支，或确认本次文档仍基于 <iteration> 的绑定关系维护。
-   ```
+## Commit Cursor
 
-   Until the human confirms, only record the mismatch in `.aiops/diff-records/pending.md` or the relevant `open-questions.md`.
-8. Read `.aiops/diff-records/pending.md`.
-9. Summarize the pending records semantically and extract keywords. Treat pending records as asynchronous coding-agent trace summaries, not as exact edit instructions or complete source diffs.
-10. Use the keywords to recall files and content across the whole workspace:
-   - canonical docs under `.aiops/projects/<project>/`;
-   - source code, tests, configs, manifests, migrations, and existing docs;
-   - graph outputs from `understand-anything` or `codegraph` when available;
-   - Trellis task/context files as evidence only, not as canonical source.
-11. Determine all impacted canonical folders:
-   - Project iteration scope, release risk, shared constraints, or global delivery cadence -> `iterations/<project-iteration>/`.
-   - Product requirement or product capability change -> `products/<product>/prd/`.
-   - Product architecture, internal service boundaries, product-level dependency, runtime, or data-flow change -> `products/<product>/architecture/`.
-   - Product interface, protocol, state, extension, or delivery-plan change -> `products/<product>/specs/`.
-   - Product durable decision or tradeoff change -> `products/<product>/adr/`.
-   - Product business, operational, validation, or agent workflow change -> `products/<product>/workflows/`.
-   - Service architecture, API/RPC/config/database/message contract, runtime, business rule, or validation command -> `products/<product>/services/<service>/{architecture,specs,workflows,adr}/`.
-   - Human-facing explanation affected -> `guides/docs/`.
-   - Unresolved or weak evidence -> `open-questions.md`.
-12. Update related files and surrounding context consistently. For example, if an interface changes, check specs, workflows, architecture, and guides instead of editing only one file.
-13. Archive handled pending sections into `.aiops/diff-records/archived/YYYY-MM-DD.md` and remove them from `pending.md`. The maintenance executor that was started by the hook owns this archiving step.
-14. Run the review checklist for changed files.
-15. Commit according to governance level.
+`commit-analysis.md` is the maintenance cursor. It replaces `pending.md` and threshold-based maintenance.
+
+Recommended shape:
+
+```md
+# Commit Analysis
+
+| Source repo | Branch | Commit | Commit time | Project | Product | Service | Result |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| /path/to/service | main | abc1234 | 2026-06-16T10:30:00+08:00 | cert | ca | ca-admin | updated workflows |
+```
+
+Rules:
+
+- Record one row after each commit is successfully analyzed.
+- Do not advance the cursor for a skipped or blocked commit unless the reason is explicitly recorded as `skipped`.
+- If branch preflight fails, do not update reading docs and do not mark the commit analyzed.
+- The next maintenance run starts after the last recorded commit for the same source repo and branch.
 
 ## Maintenance Rules
 
@@ -49,37 +57,28 @@ description: Maintains existing AIOps structured knowledge documents from code d
 - Keep source paths current when files move.
 - Remove stale claims when code contradicts them.
 - If implementation and docs disagree, prefer implementation and record the contradiction.
-- Add validation commands when a change creates a new maintenance path.
 - Always maintain docs against the selected project iteration binding. Local temporary source branches do not create new document versions.
-- Record the project iteration, product version, service `required_branch`, and any human branch-mismatch confirmation in the maintenance summary, diff record, or commit context.
-- Hooks record semantically useful agent events and trigger Claude Code maintenance; hooks must not directly rewrite canonical docs or archive pending records themselves.
-- If source and docs are separate Git repositories, only commit the docs repository. Source repository dirty state is evidence for maintenance, not a blocker for docs-only commits.
-- Hook runners prefer temporary Docker Python containers for source-development and external-user runtime. If Docker is unavailable or container execution fails, native `python3` / `python` fallback is allowed so pending capture and maintenance triggers continue.
-- If Claude Code is unavailable, the current coding LLM should use a subagent to run this workflow from the docs repository. The fallback prompt itself should not be appended to `pending.md`.
-- Do not update docs by path alone. Always use the semantic meaning of `pending.md` to recall related context across the workspace.
-- Do not use `.aiops/diff-records/archived/` as active recall input or maintenance debt.
+- This workflow is modeled after `skills-seed learn history`: review unanalysed Git history incrementally, then update generated/maintained knowledge.
+- Do not update docs by path alone. Use commit semantics to recall related context across the workspace.
 - Do not mix source-code changes into automatic documentation commits unless the human explicitly asks.
-- Do not create `cross/`, `integration.yaml`, or independent cross-product/service matrices. External upstream/downstream relationships belong in the current product or service canonical docs, with the counterpart docs used only as supporting evidence.
+- Do not create `specs/`, `cross/`, `integration.yaml`, or independent cross-product/service matrices. External upstream/downstream relationships belong in the current product or service reading docs; source and graph queries prove the implementation details.
 
-## Governance Levels
+## Git Push Hook Policy
 
-- `low`: record only; do not auto-commit.
-- `medium`: record and remind; do not auto-commit.
-- `high`: default. After threshold-driven asynchronous Claude Code maintenance succeeds, may auto-commit documentation-only or governance-only changes.
-- `xhigh`: stronger. When pending records exist, hooks may synchronously start Claude Code maintenance and auto-commit successful documentation-only or governance-only maintenance when safe.
-
-Automatic commit message:
-
-```text
-docs(aiops): <动作> <project> 知识库
-```
+- The source repository push hook starts this workflow by launching Claude Code from the docs workspace.
+- The hook passes the source repo, local ref, remote ref, old commit, and new commit when available.
+- Hooks do not write reading docs themselves.
+- Hooks do not decide semantic document updates.
+- Hooks do not use a pending queue or threshold counter.
+- If Claude Code is unavailable, the hook should fail or report that maintenance could not run according to local policy; it should not fabricate maintenance records.
 
 ## Final Response
 
 Report:
 
+- Commits analyzed.
+- Last recorded commit cursor.
 - Documents changed.
 - Evidence checked.
-- Pending records archived.
 - Commit made or skipped, with reason.
 - Any open questions or confidence limits.

@@ -53,9 +53,8 @@
 ```
 .aiops/
 ├── governance.yaml          # 治理配置
-├── hooks/                   # 三个 Python Hook 脚本
-├── projects/<project>/      # 项目知识目录（含 iteration-bindings.yaml 和 guides）
-├── diff-records/            # pending.md + archived/
+├── hooks/                   # Hook helper 脚本
+├── projects/<project>/      # 项目知识目录（含 iteration-bindings.yaml、commit-analysis.md 和 guides）
 ├── local/                   # 本地配置
 ├── cache/                   # 缓存
 └── tmp/                     # 临时文件
@@ -64,6 +63,7 @@
 外加平台配置：
 - `.claude/settings.json` — Claude Code Hook
 - `.codex/hooks.json` — Codex Hook
+- 源码仓库 `.git/hooks/pre-push` — 本机 push maintenance hook
 
 ## 完成标准
 

@@ -24,10 +24,10 @@ aiops-knowledge-lifecycle（总调度）
 |-----|-------|------|------|
 | [知识生命周期](./skills/aiops-knowledge-lifecycle.md) | "整理知识库""更新文档""审查知识"等 | 任何知识管理请求 | 路由到正确的子技能 |
 | [治理引导](./skills/aiops-governance-bootstrap.md) | "初始化 AIOps""安装治理工具" | 当前目录 | `.aiops/` 治理结构 |
-| [历史项目入库](./skills/aiops-historical-project-intake.md) | "整理这个项目的知识库" | 已有代码、文档 | 完整的项目知识文档 |
-| [文档召回辅助研发](./skills/aiops-dev-context-recall.md) | "先召回文档""按知识库辅助研发" | 研发任务、canonical docs | 项目约束、证据路径和验证建议 |
-| [日常文档维护](./skills/aiops-daily-doc-maintenance.md) | "更新文档""检查知识库" | pending 变更记录 | 更新后的关联文档 |
-| [新项目简报](./skills/aiops-new-project-briefing.md) | "为新项目初始化知识库" | 需求、PRD、会议记录 | 项目知识骨架 |
+| [历史项目入库](./skills/aiops-historical-project-intake.md) | "整理这个项目的知识库" | 已有代码、文档、历史、图谱 | 人类阅读层 |
+| [文档召回辅助研发](./skills/aiops-dev-context-recall.md) | "先召回文档""按知识库辅助研发" | 研发任务、阅读层、源码图谱 | 业务上下文、证据路径和验证建议 |
+| [日常文档维护](./skills/aiops-daily-doc-maintenance.md) | `git push`、"分析提交并更新文档" | 未分析 commits、commit-analysis 游标、图谱影响面 | 更新后的关联阅读文档 |
+| [新项目简报](./skills/aiops-new-project-briefing.md) | "为新项目初始化知识库" | 需求、PRD、会议记录 | 阅读层骨架 |
 | [知识审查](./skills/aiops-knowledge-review.md) | "审查知识库""检查文档质量" | 已有知识文档 | 审查报告和改进建议 |
 
 ## 每个技能一页说明

@@ -1,8 +1,8 @@
 # 新项目初始化文档
 
-新项目初始化文档的目标，是在代码还没有变复杂之前，先建立项目知识的治理骨架。它让项目从第一天开始就有稳定的知识入口、文档粒度和维护机制。
+新项目初始化文档的目标，是在代码还没有变复杂之前，先建立项目阅读层和维护机制。它让项目从第一天开始就有稳定的项目、产品、微服务边界，并为后续 agent 召回源码和图谱留下清晰入口。
 
-新项目最容易犯的错误，是把文档当成启动说明或临时计划。AIOps 文档要更早定义项目边界、子产品边界、决策记录和未来 agent 维护代码时需要召回的上下文。
+新项目没有足够源码证据，所以不能假装已有实现 spec。初始化阶段依赖用户引导；代码出现后，文档维护循环再用最新提交、源码、CodeGraph 和 Understand Anything 替换假设。
 
 ## 初始化结果
 
@@ -16,17 +16,25 @@
   open-questions.md
   iterations/
     <project-iteration>/
+      iteration.yaml
+      overview.md
+      architecture.md
+      release-scope.md
+      risks.md
   products/
     <product>/
       product.yaml
-      prd/
+      overview.md
       architecture/
       workflows/
-      specs/
       adr/
       services/
         <service>/
           service.yaml
+          overview.md
+          architecture/
+          workflows/
+          adr/
   guides/
     package.json
     docker-compose.yaml
@@ -39,9 +47,11 @@
         config.ts
 ```
 
-`.aiops/projects/<project>/` 是 canonical docs。`guides/` 是面向人阅读的 VuePress 站点模板，可用 Docker Compose 直接打开静态页面查看。
+`.aiops/projects/<project>/` 是人类阅读层。`guides/` 是面向人阅读的 VuePress 站点模板，可用 Docker Compose 直接打开静态页面查看。
 
 `project.yaml` 记录项目稳定身份、产品注册表和文档路径。`iteration-bindings.yaml` 记录项目迭代、产品版本和微服务主分支，不记录本地临时源码分支。
+
+不创建 `specs/`。新项目阶段的接口、数据结构、配置和协议只能作为假设或开放问题记录；代码出现后，由源码和图谱成为事实。
 
 ## 引导问题
 
@@ -66,8 +76,6 @@
 
 初始化命令从当前目录开始，递归向上查找已有 `.aiops/`。如果找到，就在已有 workspace 下创建项目知识目录；如果没找到，就在当前目录创建 `.aiops/`。
 
-这能支持人在子目录里执行初始化，也能支持一个 workspace 下治理多个项目。
-
 ```text
 当前目录
   向上查找 .aiops/
@@ -84,7 +92,7 @@
 | 命令 | 作用 |
 | --- | --- |
 | `install` | 只安装 skills，不修改 workspace。 |
-| `init` | 初始化当前 workspace 的治理结构、项目文档和 hooks。 |
+| `init` | 初始化当前 workspace 的治理结构、项目阅读层和 hooks。 |
 | `setup` | 执行 `install + init`。 |
 
 `install` 不应偷偷改项目文件。`init` 和 `setup` 可以改 workspace，但必须是幂等动作。
@@ -116,16 +124,17 @@ docker run --rm -it \
 
 ## Trellis 的位置
 
-Trellis 是辅助工具，canonical source 仍然是 `.aiops/projects/<project>/`。
+Trellis 是辅助工具，不是事实源。
 
 推荐分工：
 
-- `.aiops/projects/<project>/`：确认后的项目知识。
+- `.aiops/projects/<project>/`：人类阅读层。
+- 源码 + CodeGraph + Understand Anything：Agent 事实层。
 - `.trellis/spec/`：任务执行用的操作镜像。
 - `.trellis/tasks/`：任务证据。
 - `.trellis/workspace/`：会话记忆，不作为确认事实来源。
 
-当 Trellis 信息要进入知识库时，需要经过 agent 语义判断和人类确认，不能把临时任务状态直接当成项目事实。
+当 Trellis 信息要进入阅读层时，需要经过 agent 语义判断和人类确认，不能把临时任务状态直接当成项目事实。
 
 ## 完成标准
 
@@ -134,7 +143,9 @@ Trellis 是辅助工具，canonical source 仍然是 `.aiops/projects/<project>/
 - workspace 和 project 边界清楚。
 - products 和 services 已被记录，即使一开始只有 `core`。
 - `iteration-bindings.yaml` 能表达项目迭代、产品版本和微服务主分支。
-- 项目、产品、微服务三级文档落点已经建立。
+- 项目、产品、微服务三级阅读层落点已经建立。
+- 不创建 Markdown `specs/`。
+- 不确定实现细节进入 `open-questions.md`，等待代码和图谱替换。
 - guides 可服务人类阅读。
 - Codex 和 Claude Code hooks 可以被幂等安装。
 - 默认配置足够可用，普通 engineer 不需要先理解整套治理理论。

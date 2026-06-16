@@ -1,74 +1,66 @@
 # 日常文档维护
 
-`aiops-daily-doc-maintenance` 根据代码变更的语义记录，做跨文档一致性更新。它理解变更的影响面，更新所有受影响的文档。
+`aiops-daily-doc-maintenance` 在 `git push` 时由 push hook 启动，分析未处理的 Git 提交，并更新所有受影响的人类阅读文档。
 
 ## 触发条件
 
-- Hook 自动触发：pending 记录累积到阈值时由 Claude Code 维护
-- 你说"更新一下文档"、"同步知识库"、"检查哪些文档需要改"
-- 定期例行维护（取决于治理等级）
+- 源码仓库执行 `git push`，push hook 启动 Claude Code 维护
+- 你主动要求："分析未处理的提交并更新文档"
+- 维护失败后需要重跑某个 source repo + branch 的提交分析
 
 ## 维护输入
 
-维护的起点是文档仓库 `.aiops/diff-records/pending.md`。这是一份 hook 事件摘要队列，每条记录 agent 做了什么、输出了什么、来自哪个源码仓库和分支。
+维护不再使用 `pending.md` 队列，也不再按 pending 阈值触发。
 
-Hook 负责往 pending 里追加记录。Claude Code 维护任务负责读取 pending、回到源码仓库核验证据、理解语义、执行跨文档更新。Claude Code 不可用时，当前 LLM 使用 subagent 执行同一流程。
+输入来自：
+
+- push hook 传入的 source repo、branch、old commit、new commit
+- `.aiops/projects/<project>/commit-analysis.md`
+- 未分析 Git commits
+- 源码、测试、配置、manifest、CodeGraph、Understand Anything
 
 ## 执行步骤
 
-1. 读取 `.aiops/diff-records/pending.md`
-2. 理解变更的语义——不只是"接口 X 的参数改了"，而是"这个改动意味着什么"
-3. 识别影响范围：项目、产品、微服务
-4. 读取 `.aiops/projects/<project>/iteration-bindings.yaml`，确认项目迭代、产品版本和微服务主分支
-5. 对受影响微服务执行分支预检：当前源码分支必须等于绑定的 `required_branch`，否则提醒人工切换或确认
-6. 提炼关键词，在整个 workspace 里搜索受影响的内容
-7. 确定哪些文档需要更新：
+1. 读取 `project.yaml` 和 `iteration-bindings.yaml`
+2. 读取 `commit-analysis.md`
+3. 确认 source branch 是项目主分支或服务 `required_branch`
+4. 找出该 source repo + branch 上次已分析 commit
+5. 列出游标之后的未分析 commits
+6. 按时间顺序逐个分析 commit
+7. 对每个 commit 判断是否影响 overview、architecture、workflows、ADR、risks、guides 或 open-questions
+8. 更新阅读层
+9. 每分析完一个 commit，写入 commit hash 和 commit time
 
-| 变更类型 | 更新范围 |
-|---------|---------|
-| 项目迭代范围或交付风险变更 | `iterations/<project-iteration>/` |
-| 产品需求或能力变更 | `products/<product>/prd/` |
-| 架构、模块、依赖、数据流变更 | `products/<product>/architecture/` 或服务级 `architecture/` |
-| 接口、CLI、配置、协议变更 | 服务级 `specs/` |
-| 架构决策变更 | 产品级或服务级 `adr/` |
-| 业务流程、操作流程变更 | 产品级或服务级 `workflows/` |
-| 影响人类阅读体验 | `guides/docs/` |
+## 主分支原则
 
-8. 跨文档同步更新——一个接口改了，specs、workflows、architecture、guides 里关于它的描述都要一致
-9. 把已处理的 pending 记录移到 `archived/YYYY-MM-DD.md`，从 `pending.md` 里删掉
-10. 运行审查清单，确认没有遗漏
-11. 按治理等级决定是否自动提交
+一切基于原来的项目主分支原则来做。
+
+- 项目级文档基于 `docs_branch`
+- 服务级文档基于 `required_branch`
+- feature branch 不创建新文档版本
+- 分支不匹配时不推进 `commit-analysis.md`
 
 ## 关键原则
 
-### 跨文档一致性是核心
+### 提交语义优先
 
-文档维护最大的问题是"改了一处忘了另一处"。改了接口规格，但架构图还指向旧接口；改了部署方式，但接入指南还是老流程——这比不改还糟糕，因为读者不知道该信哪个。
+维护不是按文件名替换文字。Agent 要看 commit message、diff、源码上下文和图谱影响面，判断这个提交是否改变了人需要理解的业务流程、架构边界、ADR 或上手路径。
 
-agent 在维护时必须沿关联链路一路检查：specs ← architecture ← workflows ← guides。改一个节点，就要沿着关联走到所有受影响的叶子。
+### 每个提交独立推进
 
-### 语义理解优先于文本替换
+Claude Code 每完成一个 commit 分析，就在 `commit-analysis.md` 记录 commit hash 和 commit time。后续失败不会导致已经完成的提交重复分析。
 
-pending 记录可能只写着"工具输出提到 login 流程调整"或"apply_patch 触碰了 auth 文件"，但维护要做的不只是把文件名写到 specs 里。Agent 需要判断：
-- 这个改动是局部的还是影响了认证流程的整体设计？
-- 调用 login 的 workflow 描述要不要改？
-- 架构决策里有没有相关的前提被这个改动推翻了？
+### 不写 specs
 
-机械替换只能保证字面正确，语义理解才能保证知识库一致。
-
-### 人类可参与也可不参与
-
-`high` 下 pending 达阈值后异步维护，`xhigh` 下有 pending 就同步维护。`low` 和 `medium` 下只记录或提醒。
-
-不管哪种模式，自动提交都只包含文档和治理文件，不会把源码改动混进文档提交。
+接口、CLI、配置、协议和数据结构变化不进入 Markdown specs。只有当它们影响人类理解时，才更新 reading docs，并通过源码和 CodeGraph 指向实现事实。
 
 ## 完成标准
 
 一次合格的维护应该满足：
-- pending 的语义变化已被充分理解
-- 已确认项目迭代、产品版本和微服务主分支绑定
-- 受影响服务源码分支通过预检，或已有人工确认继续维护
-- 关键词召回覆盖了整个 workspace，而不只是变更所在的文件
-- 所有相关的 PRD、architecture、specs、adr、workflows 已保持一致
-- 人类可读的 guides 在必要时也已更新
-- 已处理的 pending 已归档，`pending.md` 里只留未处理的
+
+- 已读取提交分析游标
+- 未分析 commits 已按时间顺序处理
+- 只基于主分支或绑定服务主分支维护
+- 所有完成分析的 commits 都记录了 hash 和 commit time
+- 相关 overview、architecture、workflows、ADR、guides 已保持一致
+- 失败时没有错误推进游标

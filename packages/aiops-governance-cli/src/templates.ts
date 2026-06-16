@@ -6,12 +6,13 @@ default_project: ${yamlString(answers.projectId)}
 governance_level: ${answers.governanceLevel}
 knowledge_language: ${yamlString(answers.knowledgeLanguage)}
 projects_root: .aiops/projects
-diff_records: .aiops/diff-records/pending.md
+commit_analysis: .aiops/projects/${answers.projectId}/commit-analysis.md
 maintenance_runner:
   type: claude_code
   command: claude
   fallback: prompt_subagent
   modes:
+    medium: sync
     high: async
     xhigh: sync
 projects:
@@ -39,7 +40,7 @@ project: ${yamlString(answers.projectId)}
 display_name: ${yamlString(answers.projectId)}
 governance_level: ${answers.governanceLevel}
 knowledge_language: ${yamlString(answers.knowledgeLanguage)}
-canonical_paths:
+reading_paths:
   iterations: iterations/
   products: products/
   guides: guides/
@@ -100,7 +101,7 @@ export function gitignoreEntries(): string {
 export function projectReadme(answers: BootstrapAnswers): string {
   return `# ${answers.projectId}
 
-This directory is the canonical AIOps knowledge base for this project.
+This directory is the human reading layer for this AIOps project.
 
 ## Navigation
 
@@ -121,12 +122,13 @@ Use this file for unresolved project knowledge questions that need human confirm
 `;
 }
 
-export function pendingMd(): string {
-  return `# Pending AIOps Diff Records
+export function commitAnalysisMd(): string {
+  return `# Commit Analysis
 
-Hooks and agents append semantic maintenance notes here.
+This file records which source commits have been analyzed for human reading layer maintenance.
 
-## Pending
+| Source repo | Branch | Commit | Commit time | Project | Product | Service | Result |
+| --- | --- | --- | --- | --- | --- | --- | --- |
 
 `;
 }

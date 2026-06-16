@@ -65,37 +65,33 @@ Create missing files and directories without overwriting existing project knowle
   governance.yaml
   hooks/
     aiops_inject_context.py
-    aiops_record_diff.py
-    aiops_trigger_maintenance.py
-  diff-records/
-    pending.md
-    archived/
+    aiops_push_maintenance.py
   projects/
     <project>/
       project.yaml
       iteration-bindings.yaml
       README.md
+      commit-analysis.md
       open-questions.md
       iterations/
         <project-iteration>/
           iteration.yaml
-          prd.md
+          overview.md
           architecture.md
           release-scope.md
           risks.md
       products/
         <product>/
           product.yaml
-          prd/
+          overview.md
           architecture/
           workflows/
-          specs/
           adr/
           services/
             <service>/
               service.yaml
+              overview.md
               architecture/
-              specs/
               workflows/
               adr/
       guides/
@@ -129,14 +125,15 @@ schema_version: 1
 governance_level: high
 knowledge_language: zh-CN
 projects_root: .aiops/projects
-diff_records: .aiops/diff-records/pending.md
 maintenance_runner:
   type: claude_code
   command: claude
-  fallback: prompt_subagent
+  trigger: git_push_hook
   modes:
-    high: async
-    xhigh: sync
+    low: report_only
+    medium: run_then_ask_commit
+    high: run_and_auto_commit_docs
+    xhigh: block_push_on_failure
 platform_hooks:
   codex:
     status: installed
@@ -144,11 +141,14 @@ platform_hooks:
   claude_code:
     status: installed
     file: .claude/settings.json
+  git_push:
+    status: installed
+    file: .git/hooks/pre-push
 ```
 
 `.aiops/projects/<project>/project.yaml` is maintained by knowledge workflows. Bootstrap may create safe defaults but must not overwrite human-authored project knowledge.
 
-Project config records stable project identity, product registry, and canonical path roots. It must not store per-iteration branch bindings.
+Project config records stable project identity, product registry, reading path roots, and optional graph path hints. It must not store per-iteration branch bindings.
 
 Suggested project baseline:
 
@@ -158,10 +158,13 @@ project: <project>
 governance_level: high
 knowledge_language: zh-CN
 
-canonical_paths:
+paths:
   iterations: iterations/
   products: products/
   guides: guides/
+  graph:
+    codegraph: .codegraph/
+    understand_anything: .understand-anything/
 
 products:
   - id: core
@@ -171,7 +174,7 @@ products:
       - core
 ```
 
-Create `.aiops/projects/<project>/iteration-bindings.yaml` during init. This file is required before maintenance changes canonical docs.
+Create `.aiops/projects/<project>/iteration-bindings.yaml` during init. This file is required before maintenance changes human reading docs.
 
 Suggested binding baseline:
 
@@ -201,11 +204,11 @@ Support Codex and Claude Code.
 
 Hook scripts must:
 
-- record semantically useful agent events to the docs repository `.aiops/diff-records/pending.md`;
-- trigger Claude Code `aiops-daily-doc-maintenance` according to governance level, or print a subagent fallback prompt when Claude Code is unavailable;
-- never directly rewrite canonical docs.
+- start Claude Code `aiops-daily-doc-maintenance` from a git push hook according to governance level;
+- pass source repo, pushed branch/ref, old commit, and new commit when available;
+- never directly rewrite human reading docs.
 
-Generated hook runners should execute hook Python scripts with a temporary Docker container first. If Docker is unavailable or the container run fails in a source-development or external-user environment, they may fall back to native `python3` / `python` to keep recording and maintenance triggers available.
+Generated hook runners should execute hook Python scripts with a temporary Docker container first. If Docker is unavailable or the container run fails in a source-development or external-user environment, they may fall back to native `python3` / `python` to keep push maintenance triggers available.
 
 When source repositories and the AIOps docs repository are separate Git repositories, do not copy the full `.aiops/` tree into source repositories. Use a local source-repo pointer:
 
@@ -224,18 +227,17 @@ Platform config rules:
 - If AIOps entries already exist, update them to the current managed commands without duplicating entries.
 - If config cannot be parsed safely, stop and ask the human to resolve it.
 
-Hook files are ordinary governed files and should be committed with the workspace. Do not implement complex hook upgrade/hash tracking in the first version.
+Hook files are ordinary governed files and should be committed with the workspace. Source-repo `.git/hooks/pre-push` installation is local runtime state and is not committed by Git.
 
-## Diff Records
+## Commit Analysis Cursor
 
 Initialize:
 
 ```text
-.aiops/diff-records/pending.md
-.aiops/diff-records/archived/
+.aiops/projects/<project>/commit-analysis.md
 ```
 
-Use Markdown only. `pending.md` is active semantic input. `archived/` is committed history but not active maintenance debt.
+Use Markdown only. `commit-analysis.md` records analyzed commit hash and commit time per source repo and branch. Claude Code updates it after each successfully analyzed commit. Maintenance starts from this cursor on the next git push.
 
 ## Guides
 
@@ -251,15 +253,15 @@ The guides site is for human reading and should run with:
 docker compose up --build
 ```
 
-Canonical docs remain Markdown directories named `prd/`, `architecture/`, `specs/`, `adr/`, and `workflows/`, but those directories are nested under the owning product or service instead of the project root.
+Human reading docs remain Markdown directories and files named `overview.md`, `architecture/`, `workflows/`, and `adr/`, scoped under the owning project iteration, product, or service.
 
-Canonical docs are scoped by level:
+Human reading docs are scoped by level:
 
 - project iteration docs live under `iterations/<project-iteration>/`;
 - product docs live under `products/<product>/`;
 - service docs live under `products/<product>/services/<service>/`.
 
-Do not create root-level `prd/`, `architecture/`, `specs/`, `adr/`, or `workflows/` directories for new bootstrap output. Do not create `cross/`, `integration.yaml`, or a cross-product/service version matrix.
+Do not create root-level `prd/`, `architecture/`, `specs/`, `adr/`, or `workflows/` directories for new bootstrap output. Do not create product/service `specs/`. Do not create `cross/`, `integration.yaml`, or a cross-product/service version matrix.
 
 ## Trellis
 
@@ -267,8 +269,8 @@ Detect Trellis when present and record tool availability in `project.yaml`.
 
 Use Trellis as task/context injection:
 
-- `.trellis/spec/`: operational mirror, not canonical source.
+- `.trellis/spec/`: operational mirror, not fact source.
 - `.trellis/tasks/`: task evidence.
 - `.trellis/workspace/`: session memory, not confirmed fact source.
 
-Canonical source remains `.aiops/projects/<project>/`.
+Human reading knowledge remains `.aiops/projects/<project>/`; implementation facts remain source plus graph evidence.

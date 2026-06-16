@@ -6,7 +6,7 @@
 项目迭代 -> 产品版本 -> 微服务主分支
 ```
 
-规则来自 `docs/spec-aiops-branch-bound-document-structure.md`。它解决的问题是：LLM 维护文档前必须知道当前文档属于哪个项目迭代，不以本地临时源码分支为准。
+它解决的问题是：LLM 维护阅读层前必须知道当前文档属于哪个项目迭代，不以本地临时源码分支为准。
 
 ## 配置位置
 
@@ -53,7 +53,7 @@ iterations:
 
 ## 维护前预检
 
-LLM 修改 canonical docs 前必须先读取 `iteration-bindings.yaml`，再按影响范围做预检。
+LLM 修改人类阅读文档前必须先读取 `iteration-bindings.yaml`，再按影响范围做预检。
 
 ### 项目级文档
 
@@ -80,7 +80,7 @@ required branch = iteration-bindings.yaml 中该服务的 required_branch
 current branch = git -C <code_root> branch --show-current
 ```
 
-如果当前源码分支与 `required_branch` 不一致，默认不修改 canonical docs。LLM 应提醒：
+如果当前源码分支与 `required_branch` 不一致，默认不修改阅读文档。LLM 应提醒：
 
 ```text
 当前 <service> 在 <current branch>，但项目迭代 <iteration> 要求 <required branch>。

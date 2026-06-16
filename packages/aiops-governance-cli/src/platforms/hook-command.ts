@@ -1,4 +1,4 @@
-export type HookAction = "inject" | "record" | "trigger";
+export type HookAction = "inject";
 
 export function aiopsHookCommand(agent: "claude-code" | "codex", action: HookAction, event: string): string {
   return [

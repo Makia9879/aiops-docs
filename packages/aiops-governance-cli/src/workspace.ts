@@ -8,6 +8,7 @@ import {
 import type { BootstrapAnswers } from "./questions.js";
 import {
   categoryReadme,
+  commitAnalysisMd,
   governanceYaml,
   guidesChangePlaybook,
   guidesDockerCompose,
@@ -20,7 +21,6 @@ import {
   iterationDoc,
   iterationYaml,
   openQuestions,
-  pendingMd,
   productYaml,
   projectReadme,
   projectYaml,
@@ -95,6 +95,7 @@ export async function linkDocsRepository(
 
   await ensureLocalDocsLink(sourceRoot, docsRepo, created, updated, skipped);
   await ensureSourceHookRunner(sourceRoot, created, updated, skipped);
+  await ensureSourcePrePushHook(sourceRoot, created, updated, skipped);
   await ensureGitignoreEntry(sourceRoot, ".aiops-docs.yaml", created, updated, skipped);
   await ensureGitignoreEntry(sourceRoot, ".aiops-hook-runner.sh", created, updated, skipped);
   await ensurePlatformHookConfigs(sourceRoot, created, updated, skipped);
@@ -156,6 +157,69 @@ exec "$runner" "$@"
   updated.push(target);
 }
 
+async function ensureSourcePrePushHook(
+  sourceRoot: string,
+  created: string[],
+  updated: string[],
+  skipped: string[]
+): Promise<void> {
+  const gitRoot = path.join(sourceRoot, ".git");
+  if (!(await exists(gitRoot))) {
+    skipped.push(path.join(gitRoot, "hooks", "pre-push"));
+    return;
+  }
+
+  const target = path.join(sourceRoot, ".git", "hooks", "pre-push");
+  const managedBlock = `# >>> aiops push maintenance >>>
+runner="\${PWD:-.}/.aiops-hook-runner.sh"
+if [ -x "$runner" ]; then
+  "$runner" push-maintenance pre-push
+else
+  echo "AIOps: missing .aiops-hook-runner.sh; run aiops link-docs."
+fi
+# <<< aiops push maintenance <<<
+`;
+
+  if (!(await exists(target))) {
+    const content = `#!/usr/bin/env sh
+set -eu
+
+${managedBlock}`;
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, content, { encoding: "utf8", mode: 0o755 });
+    created.push(target);
+    return;
+  }
+
+  const before = await readFile(target, "utf8");
+  const begin = "# >>> aiops push maintenance >>>";
+  const end = "# <<< aiops push maintenance <<<";
+  const markerPattern = new RegExp(`${escapeRegExp(begin)}[\\s\\S]*?${escapeRegExp(end)}\\n?`);
+  const after = markerPattern.test(before)
+    ? before.replace(markerPattern, managedBlock)
+    : insertManagedShellBlock(before, managedBlock);
+
+  if (before === after) {
+    skipped.push(target);
+    return;
+  }
+
+  await writeFile(target, after, { encoding: "utf8", mode: 0o755 });
+  updated.push(target);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function insertManagedShellBlock(existing: string, block: string): string {
+  const lines = existing.split(/\r?\n/);
+  if (lines[0]?.startsWith("#!")) {
+    return [lines[0], block.trimEnd(), ...lines.slice(1)].join("\n");
+  }
+  return `${block}${existing.startsWith("\n") ? "" : "\n"}${existing}`;
+}
+
 async function ensureLocalDocsLink(
   sourceRoot: string,
   docsRepo: string,
@@ -197,15 +261,7 @@ export async function initializeWorkspace(
   await ensureDir(path.join(aiopsRoot, "local"), created, skipped);
   await ensureDir(path.join(aiopsRoot, "cache"), created, skipped);
   await ensureDir(path.join(aiopsRoot, "tmp"), created, skipped);
-  await ensureDir(path.join(aiopsRoot, "diff-records"), created, skipped);
-  await ensureDir(path.join(aiopsRoot, "diff-records", "archived"), created, skipped);
   await ensureGitignore(workspaceRoot, created, updated, skipped);
-  await ensureFile(
-    path.join(aiopsRoot, "diff-records", "pending.md"),
-    pendingMd(),
-    created,
-    skipped
-  );
   await ensureFile(
     path.join(aiopsRoot, "governance.yaml"),
     governanceYaml(answers),
@@ -238,6 +294,7 @@ export async function initializeWorkspace(
     created,
     skipped
   );
+  await ensureFile(path.join(projectRoot, "commit-analysis.md"), commitAnalysisMd(), created, skipped);
   await ensureFile(path.join(projectRoot, "README.md"), projectReadme(answers), created, skipped);
   await ensureFile(path.join(projectRoot, "open-questions.md"), openQuestions(), created, skipped);
 
@@ -303,7 +360,7 @@ async function ensureProductDocs(
       skipped
     );
 
-    for (const category of ["prd", "architecture", "specs", "adr", "workflows"]) {
+    for (const category of ["prd", "architecture", "adr", "workflows"]) {
       await ensureDir(path.join(productRoot, category), created, skipped);
       await ensureFile(
         path.join(productRoot, category, "README.md"),
@@ -337,7 +394,7 @@ async function ensureServiceDocs(
       skipped
     );
 
-    for (const category of ["architecture", "specs", "adr", "workflows"]) {
+    for (const category of ["architecture", "adr", "workflows"]) {
       await ensureDir(path.join(serviceRoot, category), created, skipped);
       await ensureFile(
         path.join(serviceRoot, category, "README.md"),

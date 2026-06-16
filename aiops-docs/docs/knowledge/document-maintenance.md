@@ -1,125 +1,113 @@
 # 维护文档
 
-维护文档的目标，是让项目知识随着代码和任务变化持续更新，避免文档在生成后快速失效。维护通过 hooks 记录变化、提醒 agent 判断影响面，并按治理等级决定是否自动推进。
+维护文档的目标，是让人类阅读层随着代码提交持续更新。新模型不再使用 `pending.md + 阈值触发`，而是使用 **Git push hook + Claude Code 提交分析游标**。
 
-文档维护服务的是整个 workspace 的知识库治理。一次接口改动可能同时影响微服务 specs、产品 architecture、项目迭代 release scope 和 guides；一次部署方式调整可能同时影响项目、产品和微服务多个层级。维护流程按语义更新上下文，沿着关联链路更新所有受影响的文档。
+核心流程：
+
+```text
+完成代码开发 -> 创建 commit -> git push -> push hook 启动 Claude Code
+  -> Claude Code 回顾未分析提交 -> 总结并更新阅读层
+  -> 每分析完一个提交，记录 commit hash 和 commit time
+```
 
 ## 维护入口
 
-日常维护的输入是文档仓库里的 `.aiops/diff-records/pending.md`。它记录的是 hook 捕获到的 agent 运行轨迹摘要，例如用户目标、工具输出、final output、subagent summary、源码仓库位置和分支提示。它是语义摘要而非完整源码 diff，不要求 coding LLM 主动填写结束表单。
+日常维护由源码仓库的 git push hook 触发。Hook 运行一个本地脚本，脚本从源码仓库定位 AIOps 文档仓库，然后启动 Claude Code 进程执行 `aiops-daily-doc-maintenance`。
+
+维护输入包括：
+
+1. push hook 传入的 source repo、local ref、remote ref、old commit、new commit。
+2. `.aiops/projects/<project>/commit-analysis.md` 中记录的上次已分析提交。
+3. 当前项目主分支或绑定微服务主分支上的未分析 commits。
+4. 源码、测试、配置、manifest、Git diff、CodeGraph、Understand Anything。
+
+`pending.md` 不再作为维护队列；治理等级也不再通过 pending 阈值触发维护。
+
+## 提交分析游标
+
+每个项目维护一个提交分析记录：
+
+```text
+.aiops/projects/<project>/commit-analysis.md
+```
 
 推荐结构：
 
-```text
-.aiops/diff-records/
-  pending.md
-  archived/
+```md
+# Commit Analysis
+
+| Source repo | Branch | Commit | Commit time | Project | Product | Service | Result |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| /path/to/service | main | abc1234 | 2026-06-16T10:30:00+08:00 | cert | ca | ca-admin | updated workflows |
 ```
 
-`pending.md` 是活动治理输入。`archived/` 保存历史记录，但不纳入后续主动治理范围。
+Claude Code 每完成一个 commit 分析，就写入该 commit 的 hash 和 commit time。下一次 push hook 启动时，从该 source repo + branch 的最后一条记录之后继续分析。
 
-Codex 和 Claude Code 的 hooks 只负责记录、提醒和触发维护，不直接改 canonical docs。达到治理阈值后，hook 会启动 Claude Code 执行维护；如果 Claude Code 不可用，只把 fallback prompt 输出给当前 coding LLM，让当前 LLM 使用 subagent 维护，不把 runner 故障追加进 `pending.md`。
+如果某个 commit 因分支不匹配、证据不足或 Claude Code 失败而没有完成分析，不推进游标。这样下次仍会从该 commit 开始。
 
-hook runner 的执行环境是 Docker-first：优先用临时 Python 容器运行记录和触发脚本；源码开发或外部用户环境缺 Docker 时，可降级到本机 `python3` / `python`，但仍只记录 agent event summary，不记录 runner 降级噪音。
+## 主分支原则
 
-如果代码和文档是两套 Git，源码仓库只需要一个本机指针文件：
+一切基于原来的项目主分支原则来做：
 
-```yaml
-docs_repo: /path/to/aiops-docs
-```
+- 项目级文档维护基于 `iteration-bindings.yaml` 中的 `docs_branch`。
+- 服务级文档维护基于该服务的 `required_branch`。
+- push 到 feature branch 或本地临时分支时，不创建新的文档版本。
+- 如果当前分支不是绑定主分支，默认不更新阅读层，也不推进 `commit-analysis.md`。
 
-这个文件是源码仓库根目录的 `.aiops-docs.yaml`，默认和生成的 `.aiops-hook-runner.sh` 一起加入源码仓库 `.gitignore`。源码仓库不复制完整 `.aiops/`；pending、canonical docs、归档和文档 Git 提交都发生在文档仓库。
+这避免把临时开发分支上的行为误写成项目主线事实。
 
-## 语义维护流程
+## 执行流程
 
-触发维护时，agent 应按固定步骤工作：
+Claude Code 被 push hook 启动后，应按固定步骤工作：
 
-1. 查看 `.aiops/diff-records/pending.md`。
-2. 总结语义，提炼关键词。
-3. 识别影响范围：项目、产品、微服务。
-4. 识别或询问当前项目迭代。
-5. 读取 `.aiops/projects/<project>/project.yaml` 和 `iteration-bindings.yaml`。
-6. 根据项目迭代解析产品版本和微服务主分支。
-7. 检查受影响微服务源码当前分支是否等于 `required_branch`。
-8. 用关键词在整个 workspace 召回文件和内容上下文。
-9. 根据召回结果同步修改相关 canonical docs，必要时同步 guides。
-10. 按治理等级决定是否提交文档 Git 变更。
+1. 读取 `.aiops/projects/<project>/project.yaml`。
+2. 读取 `.aiops/projects/<project>/iteration-bindings.yaml`。
+3. 读取 `.aiops/projects/<project>/commit-analysis.md`。
+4. 根据 source repo 和 branch 找到上次已分析 commit。
+5. 枚举上次游标之后、当前 push 范围内的未分析 commits。
+6. 按 commit 时间从旧到新逐个分析。
+7. 对每个 commit：
+   - 读取 commit message、commit time、changed files 和 diff。
+   - 读取必要源码、测试、配置和旧文档。
+   - 使用 CodeGraph / Understand Anything 判断调用关系、影响面和架构变化。
+   - 判断是否影响人类阅读层。
+   - 更新 overview、architecture、workflows、ADR、risks、guides 或 open-questions。
+   - 写入 `commit-analysis.md`，记录 commit hash 和 commit time。
 
-这个流程的关键点是“跨文档一致性”。例如 interface 文档变化后，如果数据流、调用流程、部署说明或人类阅读指南也受影响，就必须一起更新。否则文档表面被维护了，实际知识库已经分裂。
+这个流程参考 `skills-seed learn history`：不是每次重新理解整个项目，而是从未分析的 Git 历史增量学习并更新文档。
 
-## 分支预检
+## 维护范围
 
-维护 canonical docs 前必须先读取 `.aiops/projects/<project>/iteration-bindings.yaml`。它声明本轮项目迭代对应的产品版本和微服务主分支。
-
-微服务级维护需要检查：
-
-```text
-service code root = iteration-bindings.yaml 中该服务的 code_root
-required branch = iteration-bindings.yaml 中该服务的 required_branch
-current branch = git -C <code_root> branch --show-current
-```
-
-如果 `current branch != required_branch`，默认不修改 canonical docs。Agent 应提醒人工切换源码分支，或确认本次文档仍基于该项目迭代维护。人工确认后可以继续，但维护总结中要记录确认原因。
-
-## 治理等级
-
-为了降低使用者配置负担，维护策略使用四个等级预设：
-
-| 等级 | 行为 |
+| 变更类型 | 更新范围 |
 | --- | --- |
-| `low` | 只记录变化，不自动提交。 |
-| `medium` | 记录变化并温和提醒，不自动提交。 |
-| `high` | 默认等级；pending 达到阈值后异步启动 Claude Code 维护，成功后可提交文档变更。 |
-| `xhigh` | 更严格；只要存在 pending 就同步启动 Claude Code 维护，成功后默认提交文档变更。 |
+| 项目迭代范围、交付风险、共同约束变化 | `iterations/<project-iteration>/` |
+| 产品目的、能力或边界变化 | `products/<product>/overview.md` |
+| 架构、模块、依赖、数据流变化 | `architecture/` |
+| 业务流程、操作流程、维护流程变化 | `workflows/` |
+| 架构决策、取舍或后果变化 | `adr/` |
+| 人类上手路径变化 | `guides/docs/` |
+| 证据不足或分支不匹配 | `open-questions.md` |
 
-自动提交只允许包含文档和治理文件，不应把源码改动混进自动文档提交。提交信息建议使用：
-
-```text
-docs(aiops): 更新 <project> 知识库
-```
-
-如果知识库语言配置为英文，则提交标题使用英文。
+接口、CLI、配置、协议、数据结构变化不写 Markdown specs。它们只在影响人类理解时更新阅读层，并通过源码和图谱验证实现细节。
 
 ## Hooks 的职责边界
 
-hooks 是工具机制，负责记录和触发。它们适合做三件事：
+push hook 适合做三件事：
 
-1. 在任务开始时注入相关知识库上下文。
-2. 在有语义价值的 hook event 出现时追加 pending 记录。
-3. 在 pending 累积到阈值时调用 Claude Code 维护，或在不可用时提示当前 LLM 使用 subagent。
+1. 在 `git push` 前定位文档仓库和项目配置。
+2. 启动 Claude Code 维护进程。
+3. 把 push 范围、source repo、branch、old/new commit 传给维护进程。
 
-hooks 不应该直接重写 PRD、architecture、specs、adr、workflows。直接改正文需要理解语义、召回上下文、判断影响面，这一步应交给 Claude Code 维护任务或当前 LLM 启动的 subagent。
-
-Codex 和 Claude Code 的 hook 配置都应保持幂等安装。已有配置存在时，只追加或更新 AIOps 条目；配置无法解析时停止并让人确认。
-
-## 人类阅读与 Agent 召回
-
-维护时要同时照顾两类读者。agent 需要稳定路径、明确事实、可召回关键词和影响面；人需要连续叙事、导航和变更背景。
-
-因此正文事实仍写入 canonical docs：
-
-```text
-iterations/<project-iteration>/
-products/<product>/
-products/<product>/services/<service>/
-```
-
-人类阅读入口写入：
-
-```text
-guides/
-```
-
-当维护动作影响了人类理解路径，例如项目定位、主要流程、接入方式、开发入口变化，也应该同步更新 guides。`README.md` 只做索引，不承载长篇叙事。
+push hook 不应该直接改文档，不应该总结业务语义，也不应该推进 `commit-analysis.md`。这些都由 Claude Code 完成。
 
 ## 完成标准
 
 一次合格的维护应满足：
 
-- pending 里的语义变更已被充分理解。
-- 已确认项目迭代、产品版本和微服务主分支绑定。
-- 受影响微服务的源码分支已通过预检，或已有人工确认继续维护。
-- 关键词召回覆盖了整个 workspace，而不只当前文件。
-- 相关 PRD、architecture、specs、adr、workflows 已保持一致。
-- 必要时更新 guides，保证人仍能读懂项目现状。
-- git 提交只包含文档和治理文件，除非人类明确要求一起提交源码。
+- 已读取项目配置、迭代绑定和提交分析游标。
+- 只分析主分支或绑定服务主分支上的提交。
+- 未分析 commits 已按时间顺序处理。
+- 每个完成分析的 commit 都记录了 hash 和 commit time。
+- 相关 overview、architecture、workflows、ADR、risks 或 guides 已保持一致。
+- 没有新增 Markdown `specs/` 作为实现事实源。
+- 若维护失败，没有错误推进提交游标。

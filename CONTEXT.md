@@ -20,11 +20,11 @@ The AIOps Knowledge Lifecycle is decomposed by input scenario rather than by pro
 
 中文术语：场景导向子技能。
 
-### Agent-Executable Knowledge Schema
+### Agent Evidence Layer
 
-The structured knowledge base should optimize for coding-agent maintenance, not for human-facing project marketing. Each document should help an agent locate evidence, understand impact, preserve terminology, update only affected sections, and choose validation steps.
+The implementation fact layer that coding agents use for source-level truth. It is made from source code, tests, configs, manifests, Git history, `codegraph` call relationships, and `understand-anything` knowledge graphs. It replaces Markdown `specs/` as the source for executable contracts and implementation details.
 
-中文术语：面向 coding agent 的可执行知识结构。
+中文术语：Agent 事实层。
 
 ### Project-Level Knowledge Governance
 
@@ -34,49 +34,49 @@ The project-level Git origin repository is the commit boundary for governed know
 
 ### Product
 
-A product is a governed sub-product inside a project. It has stable identity, product-level PRD, architecture, specs, workflows, ADRs, and a service registry. Product versions are selected by project iterations rather than by local developer branches.
+A product is a governed sub-product inside a project. It has stable identity, product-level overview, architecture, workflows, ADRs, and a service registry. Product versions are selected by project iterations rather than by local developer branches. Implementation contracts are recalled from source and graph evidence, not Markdown specs.
 
 中文术语：产品。
 
 ### Service
 
-A service is a source-code service under a product. Service canonical docs describe implementation entry points, API or RPC contracts, data models, runtime configuration, business rules, validation commands, and external upstream or downstream calls owned by that service.
+A service is a source-code service under a product. Service reading docs describe business responsibility, architecture role, workflows, ADRs, external dependencies, and navigation into source evidence. Implementation entry points, API or RPC contracts, data models, runtime configuration, and validation commands belong to source code plus `codegraph` / `understand-anything`.
 
 中文术语：微服务。
 
-### Canonical Knowledge Layer
+### Human Reading Layer
 
-The long-lived source of truth for governed project knowledge. It is split into project iteration docs under `iterations/`, product docs under `products/<product>/`, and service docs under `products/<product>/services/<service>/`. Human guides remain a reading layer and are not the fact source.
-
-中文术语：权威知识层。
-
-### Reading Layer
-
-Human-facing guides derived from, and linked back to, canonical knowledge. Reading-layer documents optimize onboarding, overview, navigation, and change playbooks without replacing canonical documents as the source of truth.
+The long-lived Markdown layer for people to understand project intent, product boundaries, service responsibilities, architecture, workflows, ADRs, risks, and open questions. It is split into project iteration docs under `iterations/`, product docs under `products/<product>/`, and service docs under `products/<product>/services/<service>/`. It is derived from requirements, source evidence, Git history, and graph outputs, but it is not the executable spec.
 
 中文术语：人类阅读层。
 
-### Diff Record
+### Guides Site
 
-A Markdown record of a code, config, task, or documentation change that may require knowledge maintenance. Hooks append concise semantic records; maintenance skills consume and archive them.
+The VuePress presentation of the human reading layer. It optimizes onboarding, overview, navigation, and change playbooks. It may reorganize the same human-readable knowledge, but implementation facts still come from the agent evidence layer.
 
-中文术语：变更记录。
+中文术语：阅读站点。
 
-### Maintenance Debt
+### Commit Analysis Cursor
 
-The accumulated set of pending diff records that have not yet been reviewed, ignored, archived, or applied to the canonical knowledge layer.
+A durable Markdown record in the project reading layer that stores the last analyzed Git commit hash and commit time for each governed source branch. Maintenance uses it to find unanalysed commits on the next push.
 
-中文术语：文档维护债务。
+中文术语：提交分析游标。
+
+### Push Hook Maintenance
+
+The maintenance workflow triggered by a Git push hook on the governed project main branch or bound service main branch. The hook starts a Claude Code process, which reviews unanalysed Git commits since the commit analysis cursor, summarizes each commit, updates the human reading layer, and records the commit hash and commit time after each successful analysis.
+
+中文术语：Push Hook 文档维护。
 
 ### Semantic Maintenance
 
-The maintenance workflow that reads pending Markdown diff records as semantic change signals, extracts product/topic/change-type keywords, recalls related canonical documents, and updates cross-document context consistently. It is broader than updating only files explicitly listed by a hook.
+The maintenance workflow that reads unanalysed Git commits as semantic change signals, extracts product/topic/change-type keywords, recalls human reading docs plus source and graph evidence, and updates cross-document context consistently. It is broader than updating only files touched in a commit.
 
 中文术语：语义维护。
 
 ### Development Context Recall
 
-The workflow that reads canonical project knowledge before or during implementation, debugging, review, or explanation so a coding agent can use project iteration, product, service, PRD, architecture, specs, ADR, workflow, and open-question context as development constraints.
+The workflow that first reads the human reading layer to understand business context, then reads source code and uses `codegraph` / `understand-anything` to recall implementation relationships before or during implementation, debugging, review, or explanation.
 
 中文术语：文档召回辅助研发。
 
@@ -112,13 +112,13 @@ The source-code branch selected by a project iteration as the authoritative serv
 
 ### Iteration Binding
 
-A project-level `iteration-bindings.yaml` configuration that maps one project iteration to its documentation branch, product versions, and service main branches. Coding agents must read it before modifying canonical docs.
+A project-level `iteration-bindings.yaml` configuration that maps one project iteration to its documentation branch, product versions, and service main branches. Coding agents must read it before modifying human reading docs or treating source evidence as belonging to a selected iteration.
 
 中文术语：迭代绑定。
 
 ### Operational Mirror
 
-A task-execution copy or slice of canonical knowledge used by tools such as Trellis for context injection. Operational mirrors are not the long-lived source of truth.
+A task-execution copy or slice of human reading knowledge used by tools such as Trellis for context injection. Operational mirrors are not the long-lived source of truth.
 
 中文术语：执行态镜像。
 

@@ -73,6 +73,6 @@ aiops config-ui --project certificate-system
 3. 解析产品版本和微服务主分支。
 4. 检查受影响微服务源码当前分支。
 5. 分支不一致时提醒人工切换或确认。
-6. 在确认后的迭代绑定范围内维护 canonical docs。
+6. 在确认后的迭代绑定范围内维护人类阅读文档。
 
 因此，配置完成后还需要让 agent 按 [迭代绑定](./iteration-bindings.md) 的规则执行文档维护。
