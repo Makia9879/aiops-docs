@@ -6,3 +6,5 @@ Trellis/
 .aiops/local/**
 .aiops/cache/**
 .aiops/tmp/**
+.aiops/projects/aiops-docs/guides/node_modules/
+.aiops/projects/aiops-docs/guides/docs/.vuepress/
