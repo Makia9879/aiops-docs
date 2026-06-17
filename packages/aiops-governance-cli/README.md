@@ -207,6 +207,6 @@ docker run --rm -v "$PWD":/repo -w /repo/packages/aiops-governance-cli node:24-b
 
 ## 发布
 
-当前版本：`0.1.5`，发布标签：`v0.1.5`。
+当前版本：`0.2.0`，发布标签：`v0.2.0`。
 
 发布脚本 `scripts/publish-aiops-npm.sh` 在 `node:24-bookworm` 容器内运行，`NPM_TOKEN` 从环境变量或 CI secret 提供。

@@ -1,6 +1,6 @@
 {
   "name": "@makia9879/aiops",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "Executable AIOps governance workspace bootstrap CLI.",
   "license": "MIT",
   "type": "module",
