@@ -311,6 +311,11 @@ async function runNpmInstall(cwd: string): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const child = spawn("npm", ["install", "--save-exact"], {
       cwd,
+      env: {
+        ...process.env,
+        npm_config_cache: path.join(cwd, ".npm-cache"),
+        npm_config_update_notifier: "false"
+      },
       stdio: "inherit",
       shell: process.platform === "win32"
     });

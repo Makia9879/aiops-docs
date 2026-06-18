@@ -1,17 +1,17 @@
 {
   "codegraph": {
     "package": "@colbymchenry/codegraph",
-    "version": "0.9.9",
+    "version": "1.0.1",
     "bin": "codegraph"
   },
   "understand-anything": {
-    "package": "@understand-anything/skill",
-    "version": "2.7.6",
-    "bin": null
+    "package": "likecu-understand-anything",
+    "version": "1.0.0",
+    "bin": "understand-anything"
   },
   "trellis": {
     "package": "@mindfoldhq/trellis",
-    "version": "0.5.19",
+    "version": "0.6.2",
     "bin": "trellis"
   }
 }

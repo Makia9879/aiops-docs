@@ -22,6 +22,7 @@ npx -y @makia9879/aiops <command> [options]
 - `uninstall`: 删除 AIOps 治理技能和 CLI 管理的辅助工具链，并回显全局 CLI 卸载命令。
 - `init`: 初始化 `.aiops/`，生成项目、产品、微服务三级知识骨架。
 - `setup`: 顺序执行 `install` 和 `init`。
+- `check`: 检查 CLI 管理的工具链和 `.aiops/` 文档结构完整性。
 - `config-ui`: 启动本地浏览器页面，维护项目迭代、产品版本、微服务代码根和微服务主分支绑定。
 - `link-docs`: 在源码仓库写入本机文档仓库指针，并安装 Codex/Claude Code hook 配置。
 
@@ -84,6 +85,7 @@ aiops <command> [options]
 | `uninstall` | 删除 AIOps 技能和 CLI 管理的辅助工具链 |
 | `init` | 初始化当前工作空间的 AIOps 治理结构 |
 | `setup` | 依次执行 `install` + `init` |
+| `check` | 检查工具链和 `.aiops/` 文档结构 |
 | `config-ui` | 启动本地配置 UI |
 | `link-docs` | 将源码仓库 hook 连接到独立 AIOps 文档仓库 |
 
@@ -157,6 +159,21 @@ aiops install --with none
 ```
 
 默认会先检查固定版本工具链，输出每个工具的期望版本、当前版本和缺失项。交互式终端会提示是否由安装程序自动补齐；非交互环境必须传 `--yes` 才自动补齐；可用 `--with none` 跳过工具链。
+
+### check
+
+```bash
+aiops check --project cert-system
+```
+
+该命令只读检查，不修复、不写文件。检查范围：
+
+- CLI 管理的固定版本工具链、安装版本和可执行 shim。
+- `.aiops/governance.yaml`、项目注册和 workspace hook 文件。
+- 项目 `project.yaml`、`iteration-bindings.yaml`、`commit-analysis.md`、`README.md`、`open-questions.md`。
+- 迭代、产品、服务和 guides 目录下的基础文档骨架。
+
+工具链缺失、版本不符或文档结构存在 error 时，进程退出码为 1；只有 warning 时仍返回 0。可用 `--with none` 只检查文档结构。
 
 ### uninstall
 
