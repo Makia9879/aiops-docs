@@ -8,3 +8,4 @@ Trellis/
 .aiops/tmp/**
 .aiops/projects/aiops-docs/guides/node_modules/
 .aiops/projects/aiops-docs/guides/docs/.vuepress/
+/FastGPT
