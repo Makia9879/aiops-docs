@@ -152,6 +152,11 @@ aiops init --yes --project my-app
 # 跳过工具链，只安装技能 + 初始化
 aiops setup --yes --with none --project my-app
 
+# 检查工具链和 .aiops 文档结构完整性
+aiops check --project my-app
+# 只检查文档结构
+aiops check --with none --project my-app
+
 # 指定产品域和语言
 aiops setup --yes --project cert-auth --products CA,RA,KMC,OCSP --language zh-CN
 
@@ -178,7 +183,7 @@ aiops link-docs --docs-repo ../aiops-docs
 | `--language <lang>` | 文档语言 | `zh-CN` |
 | `--with <tools>` | 辅助工具链：`default` / `none` / 逗号列表 | `default` |
 
-安装命令会先检查本地工具链版本和可执行 shim，汇总已就绪、缺失或版本不符的工具。交互式安装会询问是否自动补齐；带 `--yes` 时自动补齐；`--with none` 跳过工具链检查和安装。
+安装命令会先检查本地工具链版本和可执行 shim，汇总已就绪、缺失或版本不符的工具。交互式安装会询问是否自动补齐；带 `--yes` 时自动补齐；`--with none` 跳过工具链检查和安装。`aiops check` 是只读检查命令，会汇总工具链状态和 `.aiops/` 项目文档骨架完整性。
 
 ## 查看文档站点
 

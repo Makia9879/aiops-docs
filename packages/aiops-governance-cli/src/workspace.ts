@@ -360,7 +360,7 @@ async function ensureProductDocs(
       skipped
     );
 
-    for (const category of ["prd", "architecture", "adr", "workflows"]) {
+    for (const category of ["prd", "architecture", "specs", "adr", "workflows"]) {
       await ensureDir(path.join(productRoot, category), created, skipped);
       await ensureFile(
         path.join(productRoot, category, "README.md"),
@@ -394,7 +394,7 @@ async function ensureServiceDocs(
       skipped
     );
 
-    for (const category of ["architecture", "adr", "workflows"]) {
+    for (const category of ["architecture", "specs", "adr", "workflows"]) {
       await ensureDir(path.join(serviceRoot, category), created, skipped);
       await ensureFile(
         path.join(serviceRoot, category, "README.md"),

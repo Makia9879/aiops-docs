@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { parseArgs } from "./args.js";
+import { checkDocuments, type DocumentCheckResult } from "./check.js";
 import { runConfigUi } from "./config-ui.js";
 import { installSkills, uninstallSkills } from "./install.js";
 import {
@@ -23,6 +24,18 @@ import {
 } from "./questions.js";
 import { promptForAnswers, promptForToolchainRepair } from "./tui.js";
 
+const colorEnabled = process.env.FORCE_COLOR
+  ? process.env.FORCE_COLOR !== "0"
+  : !process.env.NO_COLOR && process.env.TERM !== "dumb";
+const colors = {
+  bold: (value: string) => color(value, "1"),
+  green: (value: string) => color(value, "32"),
+  yellow: (value: string) => color(value, "33"),
+  red: (value: string) => color(value, "31"),
+  cyan: (value: string) => color(value, "36"),
+  dim: (value: string) => color(value, "2")
+};
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
 
@@ -44,6 +57,11 @@ async function main(): Promise<void> {
   if (args.command === "setup") {
     await runInstall(args);
     await runInit(args);
+    return;
+  }
+
+  if (args.command === "check") {
+    await runCheck(args);
     return;
   }
 
@@ -139,17 +157,59 @@ async function runInstall(args: ReturnType<typeof parseArgs>): Promise<void> {
 }
 
 function printToolchainCheck(result: ToolchainCheckResult): void {
-  console.log(`Toolchain check: ${result.ready.length}/${result.tools.length} ready`);
+  const summary =
+    result.needsInstall.length === 0
+      ? colors.green(`${result.ready.length}/${result.tools.length} ready`)
+      : colors.red(`${result.ready.length}/${result.tools.length} ready`);
+  console.log(`${colors.bold("Toolchain check")}: ${summary}`);
   if (result.skipped.length > 0) {
-    console.log(`Toolchain skipped: ${result.skipped.join(", ")}`);
+    console.log(`${colors.yellow("Toolchain skipped")}: ${result.skipped.join(", ")}`);
   }
 
   for (const tool of result.tools) {
     const installed = tool.installedVersion ?? "missing";
     const issues = tool.issues.length > 0 ? `; ${tool.issues.join("; ")}` : "";
+    const status = colorStatus(tool.status);
     console.log(
-      `- ${tool.name}: ${tool.status}; expected ${tool.packageName}@${tool.expectedVersion}; installed ${installed}${issues}`
+      `- ${colors.cyan(tool.name)}: ${status}; expected ${tool.packageName}@${tool.expectedVersion}; installed ${installed}${issues}`
     );
+  }
+}
+
+async function runCheck(args: ReturnType<typeof parseArgs>): Promise<void> {
+  const toolchainCheck = await checkToolchain({
+    selection: args.withTools,
+    toolsRoot: args.toolsRoot
+  });
+  const documentsCheck = await checkDocuments({
+    cwd: args.cwd,
+    project: args.project
+  });
+
+  printToolchainCheck(toolchainCheck);
+  printDocumentCheck(documentsCheck);
+
+  if (toolchainCheck.needsInstall.length > 0 || documentsCheck.status === "error") {
+    process.exitCode = 1;
+  }
+}
+
+function printDocumentCheck(result: DocumentCheckResult): void {
+  console.log(`${colors.bold("Document check")}: ${colorStatus(result.status)}`);
+  console.log(`Workspace: ${colors.cyan(result.workspaceRoot)}`);
+  console.log(`AIOps root: ${colors.cyan(result.aiopsRoot)}`);
+  console.log(
+    `Projects checked: ${result.checkedProjects.length > 0 ? result.checkedProjects.join(", ") : "none"}`
+  );
+
+  if (result.issues.length === 0) {
+    console.log(`- documents: ${colors.green("ready")}`);
+    return;
+  }
+
+  for (const issue of result.issues) {
+    const suffix = issue.path ? colors.dim(` (${issue.path})`) : "";
+    console.log(`- ${colorStatus(issue.status)}: ${issue.code}: ${issue.message}${suffix}`);
   }
 }
 
@@ -242,6 +302,7 @@ Commands:
   uninstall            Remove AIOps skills and managed toolchain files
   init                 Initialize AIOps governance in the current workspace
   setup                Run install, then init
+  check                Check managed toolchain and AIOps document structure
   config-ui            Start local UI for iteration/product/service bindings
   link-docs            Link a source repo to an existing AIOps docs repo
 
@@ -273,6 +334,23 @@ Options:
 
 main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
-  console.error(`aiops: ${message}`);
+  console.error(`${colors.red("aiops")}: ${message}`);
   process.exitCode = 1;
 });
+
+function color(value: string, code: string): string {
+  return colorEnabled ? `\x1b[${code}m${value}\x1b[0m` : value;
+}
+
+function colorStatus(status: string): string {
+  if (status === "ok" || status === "ready") {
+    return colors.green(status);
+  }
+  if (status === "warning" || status === "incomplete") {
+    return colors.yellow(status);
+  }
+  if (status === "error" || status === "missing" || status === "version-mismatch") {
+    return colors.red(status);
+  }
+  return status;
+}

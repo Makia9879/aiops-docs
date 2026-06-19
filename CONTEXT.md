@@ -133,3 +133,30 @@ The AIOps Knowledge Lifecycle is implemented as multiple independently triggerab
 AIOps knowledge skills are authored in the workspace source tree under `skills/` and installed or copied to the agent runtime skill directory such as `~/.agents/skills/`. The workspace copy is the version-controlled source of truth when the workspace is under version control; the runtime copy is what agents load during work.
 
 中文术语：技能源稿与运行副本。
+
+## Local CLI Source Install
+
+This repository must not run host `npm`, `npx`, `node`, or `python` commands. When testing unpublished CLI changes locally, build inside a temporary Docker Node image and copy the built package into the active nvm global package prefix.
+
+Do not run `npm install -g /repo/packages/aiops-governance-cli --prefix /host-node` from inside the Docker mount. In this workspace it can create a host-side symlink from `~/.nvm/versions/node/<version>/lib/node_modules/@makia9879/aiops` to the container-only `/repo/...` path, leaving the host `aiops` command broken.
+
+The working source-install flow is:
+
+```bash
+docker run --rm \
+  -v /Users/makia98/lij/work/CA/aiops-docs:/repo \
+  -v /Users/makia98/.nvm/versions/node/v24.15.0:/host-node \
+  -v /private/tmp/aiops-local-copy-from-source.sh:/tmp/aiops-local-copy-from-source.sh \
+  -w /repo/packages/aiops-governance-cli \
+  node:24-bookworm \
+  bash /tmp/aiops-local-copy-from-source.sh
+```
+
+The helper script should run `npm ci`, `npm run build`, `npm run prepare-package`, remove any bad symlink at `/host-node/lib/node_modules/@makia9879/aiops`, copy `dist`, `assets`, `scripts`, `package.json`, `README.md`, and `LICENSE` into that real package directory, chmod `dist/cli.js`, and recreate `/host-node/bin/aiops` as a symlink to `../lib/node_modules/@makia9879/aiops/dist/cli.js`.
+
+After installing, verify with:
+
+```bash
+aiops --help
+aiops check --with none
+```
